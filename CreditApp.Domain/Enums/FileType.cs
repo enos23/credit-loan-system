@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CreditApp.Domain.Enums
+namespace CreditApp.Domain.Enums;
+
+public enum FileType
 {
-    internal class FileType
-    {
-    }
+    IncomeProof,
+    IDCard,
+    BankStatement,
+    Other
 }
