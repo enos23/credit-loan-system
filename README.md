@@ -1,2 +1,3 @@
 # credit-loan-system
-Aplicatie web pentru acordare de credite bancare si asistare a deciziilor in analizarea clientilor.
+**RO:** Aplicatie web pentru acordare de credite bancare si asistare a deciziilor in analizarea clientilor.
+**EN:** Web application for bank loan processing and client analysis decision support
