@@ -9,7 +9,7 @@ namespace CreditApp.Application.DTOs.CreditRequest;
 public class CreateCreditRequestDto
 {
     public Guid ClientId { get; set; }
-    public decimal Amout { get; set; }
+    public decimal Amount { get; set; }
     public int TermMonths { get; set; }
     public string Purpose { get; set; } = string.Empty;
 
