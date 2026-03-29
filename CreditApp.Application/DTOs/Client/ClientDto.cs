@@ -17,8 +17,8 @@ public class ClientDto
     public DateTime DateOfBirth { get; set; }
     public string Address { get; set; } = string.Empty;
     public string EmploymentStatus { get; set; } = string.Empty;
-    public string MonthlyIncome { get; set; }
-    public string MonthlyExpenses { get; set; }
+    public decimal MonthlyIncome { get; set; }
+    public decimal MonthlyExpenses { get; set; }
 
     public DateTime CreatedAt { get; set; }
 }

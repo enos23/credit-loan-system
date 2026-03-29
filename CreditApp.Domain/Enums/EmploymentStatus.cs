@@ -10,6 +10,6 @@ public enum EmploymentStatus
 {
     Employed,
     Unemployed,
-    selfEmployed,
+    SelfEmployed,
     Retired
 }
