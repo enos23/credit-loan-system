@@ -9,10 +9,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CreditApp.Application\CreditApp.Application.csproj" />
+    <ProjectReference Include="..\CreditApp.Infrastructure\CreditApp.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
