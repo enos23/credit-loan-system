@@ -52,7 +52,7 @@ public class ClientService : IClientService
             LastName = dto.LastName,
             Email = dto.Email,
             Phone = dto.Phone,
-            DateOfBirth = dto.DateOfBirth,
+            DateOfBirth = DateTime.SpecifyKind(dto.DateOfBirth, DateTimeKind.Utc),
             Address = dto.Address,
             EmploymentStatus = Enum.Parse<EmploymentStatus>(dto.EmploymentStatus),
             MonthlyIncome = dto.MonthlyIncome,
