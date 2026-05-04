@@ -37,7 +37,7 @@ public class CreditRequestsController : ControllerBase
         return Ok(request);
     }
 
-    [HttpGet("client/{clientId:guid}")]
+    [HttpPost]
     [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> Create([FromBody] CreateCreditRequestDto dto)
     {
