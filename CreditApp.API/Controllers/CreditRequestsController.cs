@@ -54,11 +54,11 @@ public class CreditRequestsController : ControllerBase
 
     [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = "Admin,Analyst")]
-    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] string status)
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateCreditRequestStatusDto dto)
     {
         try
         {
-            await _creditRequestService.UpdateStatusAsync(id, status);
+            await _creditRequestService.UpdateStatusAsync(id, dto.Status);
             return NoContent();
         }
         catch (InvalidOperationException ex)
