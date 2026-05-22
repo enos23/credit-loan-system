@@ -57,15 +57,22 @@ public class DecisionsController : ControllerBase
             if (creditRequest == null)
                 return NotFound("Cererea de credit nu a fost găsită.");
 
+            var existingDecision = await _decisionRepository.GetByCreditRequestIdAsync(dto.CreditRequestId);
+            if (existingDecision != null)
+                return Conflict("Există deja o decizie pentru această cerere de credit.");
+
             var analystId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (analystId == null)
                 return Unauthorized();
+
+            if (!Enum.TryParse<DecisionType>(dto.DecisionType, out var decisionType))
+                return BadRequest($"Tipul de decizie '{dto.DecisionType}' nu este valid.");
 
             var decision = new Decision
             {
                 CreditRequestId = dto.CreditRequestId,
                 AnalystId = Guid.Parse(analystId),
-                DecisionType = Enum.Parse<DecisionType>(dto.DecisionType),
+                DecisionType = decisionType,
                 InterestRate = dto.InterestRate,
                 ApprovedAmount = dto.ApprovedAmount,
                 Notes = dto.Notes,

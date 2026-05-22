@@ -41,9 +41,16 @@ public class UsersController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserDto dto)
     {
-        var user = await _userManagementService.UpdateUserAsync(id, dto);
-        if (user == null) return NotFound();
-        return Ok(user);
+        try
+        {
+            var user = await _userManagementService.UpdateUserAsync(id, dto);
+            if (user == null) return NotFound();
+            return Ok(user);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPatch("{id}/toggle-active")]

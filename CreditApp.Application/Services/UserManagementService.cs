@@ -27,13 +27,16 @@ public class UserManagementService : IUserManagementService
         if (existing != null)
             throw new InvalidOperationException("Un utilizator cu acest email există deja.");
 
+        if (!Enum.TryParse<UserRole>(dto.Role, out var role))
+            throw new InvalidOperationException($"Rolul '{dto.Role}' nu este valid.");
+
         var user = new User
         {
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Role = Enum.Parse<UserRole>(dto.Role),
+            Role = role,
             IsActive = true
         };
 
@@ -46,9 +49,12 @@ public class UserManagementService : IUserManagementService
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null) return null;
 
+        if (!Enum.TryParse<UserRole>(dto.Role, out var role))
+            throw new InvalidOperationException($"Rolul '{dto.Role}' nu este valid.");
+
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
-        user.Role = Enum.Parse<UserRole>(dto.Role);
+        user.Role = role;
 
         await _userRepository.UpdateAsync(user);
         return MapToDto(user);

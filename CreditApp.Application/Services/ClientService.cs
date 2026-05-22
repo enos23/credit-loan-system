@@ -45,6 +45,9 @@ public class ClientService : IClientService
         if (existingClient != null)
             throw new InvalidOperationException("Un client cu acest CNP există deja.");
 
+        if (!Enum.TryParse<EmploymentStatus>(dto.EmploymentStatus, out var employmentStatus))
+            throw new InvalidOperationException($"Statusul de angajare '{dto.EmploymentStatus}' nu este valid.");
+
         var client = new Client
         {
             CNP = dto.CNP,
@@ -54,7 +57,7 @@ public class ClientService : IClientService
             Phone = dto.Phone,
             DateOfBirth = DateTime.SpecifyKind(dto.DateOfBirth, DateTimeKind.Utc),
             Address = dto.Address,
-            EmploymentStatus = Enum.Parse<EmploymentStatus>(dto.EmploymentStatus),
+            EmploymentStatus = employmentStatus,
             MonthlyIncome = dto.MonthlyIncome,
             MonthlyExpenses = dto.MonthlyExpenses
         };
@@ -69,12 +72,15 @@ public class ClientService : IClientService
         if (client == null)
             throw new InvalidOperationException("Clientul nu a fost găsit.");
 
+        if (!Enum.TryParse<EmploymentStatus>(dto.EmploymentStatus, out var employmentStatus))
+            throw new InvalidOperationException($"Statusul de angajare '{dto.EmploymentStatus}' nu este valid.");
+
         client.FirstName = dto.FirstName;
         client.LastName = dto.LastName;
         client.Email = dto.Email;
         client.Phone = dto.Phone;
         client.Address = dto.Address;
-        client.EmploymentStatus = Enum.Parse<EmploymentStatus>(dto.EmploymentStatus);
+        client.EmploymentStatus = employmentStatus;
         client.MonthlyIncome = dto.MonthlyIncome;
         client.MonthlyExpenses = dto.MonthlyExpenses;
 
