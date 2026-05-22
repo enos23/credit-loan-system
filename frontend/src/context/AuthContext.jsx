@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { login as loginApi, register as registerApi, updateProfile as updateProfileApi } from "../api/authApi";
+import { login as loginApi, updateProfile as updateProfileApi } from "../api/authApi";
 
 const AuthContext = createContext(null);
 
@@ -39,12 +39,6 @@ export const AuthProvider = ({ children }) => {
         return response.data;
     };
 
-    const register = async (data) => {
-        const response = await registerApi(data);
-        persistUser(response.data);
-        return response.data;
-    };
-
     const updateUser = async (profileData) => {
         const response = await updateProfileApi(profileData);
         persistUser(response.data);
@@ -58,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, updateUser, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
             {children}
         </AuthContext.Provider>
     );
