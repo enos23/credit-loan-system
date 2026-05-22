@@ -31,10 +31,18 @@ public class CreditRequestsController : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
     {
         var request = await _creditRequestService.GetByIdAsync(id);
-        if (request == null) 
+        if (request == null)
             return NotFound("Cererea de credit nu a fost găsită.");
 
         return Ok(request);
+    }
+
+    [HttpGet("client/{clientId:guid}")]
+    [Authorize(Roles = "Admin,Analyst,Banker")]
+    public async Task<IActionResult> GetByClientId(Guid clientId)
+    {
+        var requests = await _creditRequestService.GetByClientIdAsync(clientId);
+        return Ok(requests);
     }
 
     [HttpPost]
