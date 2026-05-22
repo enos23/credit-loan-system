@@ -48,7 +48,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Analyst")]
+    [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> Create([FromBody] CreateClientDto dto)
     {
         try
@@ -63,7 +63,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpPost("{id:guid}")]
-    [Authorize(Roles = "Admin,Analyst")]
+    [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> Update(Guid id, [FromBody] CreateClientDto dto)
     {
         try

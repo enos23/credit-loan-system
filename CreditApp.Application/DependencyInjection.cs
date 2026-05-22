@@ -22,6 +22,9 @@ public static class DependencyInjection
         services.AddScoped<IClientService, ClientService>();
         services.AddScoped<ICreditRequestService, CreditRequestService>();
         services.AddScoped<IScoringService, ScoringService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
+        services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ITransactionService, TransactionService>();
     
     return services;
     }

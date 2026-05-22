@@ -1,11 +1,20 @@
-import { createContext, useContext, useState, useEffect, use } from "react";
-import { login as loginApi, register as registerApi } from "../api/authApi";
+import { createContext, useContext, useState, useEffect } from "react";
+import { login as loginApi, register as registerApi, updateProfile as updateProfileApi } from "../api/authApi";
 
 const AuthContext = createContext(null);
 
+const parseUser = (data) => ({
+    email: data.email,
+    fullName: data.fullName,
+    role: data.role,
+    phone: data.phone ?? null,
+    bio: data.bio ?? null,
+    avatarGradient: data.avatarGradient ?? 'blue',
+});
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true); 
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -13,24 +22,32 @@ export const AuthProvider = ({ children }) => {
         if (token && userData) {
             setUser(JSON.parse(userData));
         }
-        setLoading(false); 
+        setLoading(false);
     }, []);
+
+    const persistUser = (data) => {
+        const parsed = parseUser(data);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(parsed));
+        setUser(parsed);
+        return parsed;
+    };
 
     const login = async (data) => {
         const response = await loginApi(data);
-        const { token, email, fullName, role } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify({ email, fullName, role }));
-        setUser({ email, fullName, role });
+        persistUser(response.data);
         return response.data;
     };
 
     const register = async (data) => {
         const response = await registerApi(data);
-        const { token, email, fullName, role } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify({ email, fullName, role }));
-        setUser({ email, fullName, role });
+        persistUser(response.data);
+        return response.data;
+    };
+
+    const updateUser = async (profileData) => {
+        const response = await updateProfileApi(profileData);
+        persistUser(response.data);
         return response.data;
     };
 
@@ -41,15 +58,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, register, updateUser, loading }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context)
-    throw new Error('useAuth must be used within AuthProvider');
-  return context;
+    const context = useContext(AuthContext);
+    if (!context)
+        throw new Error('useAuth must be used within AuthProvider');
+    return context;
 };

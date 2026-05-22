@@ -1,6 +1,11 @@
+using BCrypt.Net;
 using CreditApp.Application;
+using CreditApp.Domain.Entities;
+using CreditApp.Domain.Enums;
 using CreditApp.Infrastructure;
+using CreditApp.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -66,5 +71,29 @@ app.UseCors("AllowReact");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Seed first admin if none exists
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+
+    bool adminExists = await db.Users.AnyAsync(u => u.Role == UserRole.Admin);
+    if (!adminExists)
+    {
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "admin@creditwise.ro",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234"),
+            FirstName = "Administrator",
+            LastName = "System",
+            Role = UserRole.Admin,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+    }
+}
 
 app.Run();

@@ -35,6 +35,17 @@ public class DecisionRepository : IDecisionRepository
             .FirstOrDefaultAsync(d => d.CreditRequestId == creditRequesId);
     }
 
+    public async Task<IEnumerable<Decision>> GetAllApprovedAsync()
+    {
+        return await _context.Decisions
+            .Include(d => d.CreditRequest)
+                .ThenInclude(cr => cr.Client)
+            .Include(d => d.Analyst)
+            .Where(d => d.DecisionType == CreditApp.Domain.Enums.DecisionType.Approved)
+            .OrderByDescending(d => d.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task AddAsync(Decision decision)
     {
         decision.Id = Guid.NewGuid();

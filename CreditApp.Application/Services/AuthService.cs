@@ -32,7 +32,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
     {
         var user = await _userRepository.GetByEmailAsync(dto.Email);
-        if (user == null)
+        if (user == null || !user.IsActive)
             return null;
 
         bool isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
@@ -42,23 +42,58 @@ public class AuthService : IAuthService
         return GenerateAuthResponse(user);
     }
 
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResponseDto?> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
     {
-        var existingUser = await _userRepository.GetByEmailAsync(dto.Email);
-        if (existingUser != null)
-            throw new InvalidOperationException("Un utilizator cu acest email există deja.");
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) return null;
 
-        var user = new User
-        {
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            Role = Enum.Parse<UserRole>(dto.Role)
-        };
+        user.FirstName = dto.FirstName;
+        user.LastName = dto.LastName;
+        user.Phone = dto.Phone;
+        user.Bio = dto.Bio;
+        user.AvatarGradient = dto.AvatarGradient;
 
-        await _userRepository.AddAsync(user);
+        await _userRepository.UpdateAsync(user);
         return GenerateAuthResponse(user);
+    }
+
+    public async Task<string?> ForgotPasswordAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null || !user.IsActive) return null;
+
+        var token = Guid.NewGuid().ToString("N");
+        user.ResetPasswordToken = token;
+        user.ResetPasswordTokenExpiry = DateTime.UtcNow.AddHours(1);
+        await _userRepository.UpdateAsync(user);
+
+        return token;
+    }
+
+    public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+    {
+        var user = await _userRepository.GetByResetTokenAsync(token);
+        if (user == null || user.ResetPasswordTokenExpiry < DateTime.UtcNow)
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.ResetPasswordToken = null;
+        user.ResetPasswordTokenExpiry = null;
+        await _userRepository.UpdateAsync(user);
+        return true;
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) return false;
+
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        await _userRepository.UpdateAsync(user);
+        return true;
     }
 
     private AuthResponseDto GenerateAuthResponse(User user)
@@ -71,7 +106,10 @@ public class AuthService : IAuthService
             FullName = $"{user.FirstName} {user.LastName}",
             Role = user.Role.ToString(),
             ExpiresAt = DateTime.UtcNow.AddDays(
-                double.Parse(_configuration["JwtSettings:ExpiresInDays"] ?? "7"))
+                double.Parse(_configuration["JwtSettings:ExpiresInDays"] ?? "7")),
+            Phone = user.Phone,
+            Bio = user.Bio,
+            AvatarGradient = user.AvatarGradient,
         };
     }
 

@@ -416,3 +416,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Installer artifacts (do not commit)
+dotnet-install.sh
+packages-microsoft-prod.deb
+*.deb

@@ -31,11 +31,24 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(U => U.Email == email);
     }
 
+    public async Task<User?> GetByResetTokenAsync(string token)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.ResetPasswordToken == token);
+    }
+
     public async Task AddAsync(User user)
     {
         user.Id = Guid.NewGuid();
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<User>> GetAllAsync()
+    {
+        return await _context.Users
+            .OrderBy(u => u.CreatedAt)
+            .ToListAsync();
     }
 
     public async Task UpdateAsync(User user)

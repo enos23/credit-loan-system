@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Hexagon, TrendingUp, Scale, ShieldCheck, Lock } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, Scale, ShieldCheck, Lock } from 'lucide-react';
+import CreditWiseLogo from '../../components/ui/CreditWiseLogo';
 
 const DashboardMockup = () => (
     <div className="w-full h-full flex flex-col gap-3 max-w-[22rem] mx-auto justify-center origin-center transform scale-95">
@@ -170,12 +171,8 @@ const LoginPage = () => {
                 {/* Left Side (Form) */}
                 <div className="flex-1 p-8 sm:p-12 lg:p-14 flex flex-col justify-between overflow-y-auto">
                     <div>
-                        <div className="flex items-center gap-3.5 mb-12">
-                            {/* Original Logo Icon */}
-                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <Hexagon size={24} fill="currentColor" className="text-white" />
-                            </div>
-                            <span className="text-2xl font-extrabold text-slate-800 tracking-tight">CreditWise</span>
+                        <div className="mb-12">
+                            <CreditWiseLogo size="md" />
                         </div>
 
                         <div className="max-w-sm mr-auto">
@@ -217,7 +214,7 @@ const LoginPage = () => {
                                         </button>
                                     </div>
                                     <div className="flex justify-end mt-1">
-                                        <a href="#" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">Ați uitat parola?</a>
+                                        <Link to="/forgot-password" className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">Ați uitat parola?</Link>
                                     </div>
                                 </div>
 
@@ -234,7 +231,7 @@ const LoginPage = () => {
                                 </Button>
                             </form>
 
-                            <div className="mt-8">
+                            <div className="mt-6">
                                 <div className="relative">
                                     <div className="absolute inset-0 flex items-center">
                                         <span className="w-full border-t border-slate-200" />

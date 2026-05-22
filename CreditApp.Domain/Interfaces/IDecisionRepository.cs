@@ -13,6 +13,7 @@ public interface IDecisionRepository
 {
     Task<Decision?> GetByIdAsync(Guid id);
     Task<Decision?> GetByCreditRequestIdAsync(Guid creditRequestId);
+    Task<IEnumerable<Decision>> GetAllApprovedAsync();
     Task AddAsync(Decision decision);
-    Task UpdateAsync (Decision decision);
+    Task UpdateAsync(Decision decision);
 }
