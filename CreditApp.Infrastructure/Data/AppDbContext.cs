@@ -27,7 +27,6 @@ public class AppDbContext : DbContext
     public DbSet<Client> Clients { get; set; }
     public DbSet<CreditRequest> CreditRequests { get; set; }
     public DbSet<Decision> Decisions { get; set; }
-    public DbSet<Document> Documents { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -165,36 +165,6 @@ namespace CreditApp.Infrastructure.Migrations
                     b.ToTable("Decisions");
                 });
 
-            modelBuilder.Entity("CreditApp.Domain.Entities.Document", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreditRequestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("FileType")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpliadedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreditRequestId");
-
-                    b.ToTable("Documents");
-                });
-
             modelBuilder.Entity("CreditApp.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -291,17 +261,6 @@ namespace CreditApp.Infrastructure.Migrations
                     b.Navigation("CreditRequest");
                 });
 
-            modelBuilder.Entity("CreditApp.Domain.Entities.Document", b =>
-                {
-                    b.HasOne("CreditApp.Domain.Entities.CreditRequest", "CreditRequest")
-                        .WithMany("Documents")
-                        .HasForeignKey("CreditRequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreditRequest");
-                });
-
             modelBuilder.Entity("CreditApp.Domain.Entities.Client", b =>
                 {
                     b.Navigation("CreditRequests");
@@ -310,8 +269,6 @@ namespace CreditApp.Infrastructure.Migrations
             modelBuilder.Entity("CreditApp.Domain.Entities.CreditRequest", b =>
                 {
                     b.Navigation("Decision");
-
-                    b.Navigation("Documents");
                 });
 #pragma warning restore 612, 618
         }
