@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { extractErrorMessage } from '../../api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -155,8 +156,7 @@ const LoginPage = () => {
             await login({ email, password });
             navigate('/dashboard');
         } catch (err) {
-            if (err.response?.status === 429) setError(err.response.data);
-            else setError(err.response?.data?.message || 'Login failed');
+            setError(extractErrorMessage(err, 'Login failed'));
         } finally {
             setLoading(false);
         }

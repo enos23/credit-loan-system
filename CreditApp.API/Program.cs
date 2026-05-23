@@ -1,4 +1,5 @@
 using BCrypt.Net;
+using CreditApp.API.Middleware;
 using CreditApp.Application;
 using CreditApp.Application.Configuration;
 using CreditApp.Domain.Entities;
@@ -20,6 +21,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 //Clean Architecture layers
 builder.Services.AddApplication();
@@ -115,6 +118,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Middleware pipeline
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

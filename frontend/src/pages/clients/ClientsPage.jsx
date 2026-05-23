@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getAllClients, createClient, updateClient, deleteClient } from '../../api/clientsApi';
+import { extractErrorMessage } from '../../api/errors';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,7 +129,7 @@ const ClientsPage = () => {
       setForm(emptyForm);
       fetchClients();
     } catch (err) {
-      setError(err.response?.data || 'Eroare la crearea clientului.');
+      setError(extractErrorMessage(err, 'Eroare la crearea clientului.'));
     }
   };
 
@@ -165,7 +166,7 @@ const ClientsPage = () => {
       setEditingClient(null);
       fetchClients();
     } catch (err) {
-      setEditError(err.response?.data || 'Eroare la actualizarea clientului.');
+      setEditError(extractErrorMessage(err, 'Eroare la actualizarea clientului.'));
     }
   };
 

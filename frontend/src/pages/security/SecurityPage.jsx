@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Lock, Eye, EyeOff, Shield, Monitor, Smartphone, CheckCircle, AlertTriangle, LogOut } from 'lucide-react';
 import { changePassword } from '../../api/authApi';
+import { extractErrorMessage } from '../../api/errors';
 
 const SESSIONS = [
     { device: 'Chrome / Windows 11', location: 'București, România', time: 'Acum — sesiune curentă', current: true, Icon: Monitor },
@@ -61,7 +62,7 @@ const SecurityPage = () => {
             setForm({ current: '', newPass: '', confirm: '' });
             setTimeout(() => setSaved(false), 3000);
         } catch (err) {
-            setError(err.response?.data || 'Parola curentă este incorectă.');
+            setError(extractErrorMessage(err, 'Parola curentă este incorectă.'));
         }
     };
 

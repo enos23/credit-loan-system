@@ -49,29 +49,15 @@ public class CreditRequestsController : ControllerBase
     [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> Create([FromBody] CreateCreditRequestDto dto)
     {
-        try
-        {
-            var request = await _creditRequestService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = request.Id }, request);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var request = await _creditRequestService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = request.Id }, request);
     }
 
     [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = "Admin,Analyst")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateCreditRequestStatusDto dto)
     {
-        try
-        {
-            await _creditRequestService.UpdateStatusAsync(id, dto.Status);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        await _creditRequestService.UpdateStatusAsync(id, dto.Status);
+        return NoContent();
     }
 }

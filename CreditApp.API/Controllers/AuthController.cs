@@ -65,18 +65,11 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
-        try
-        {
-            var result = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
-            if (!result)
-                return BadRequest("Codul de resetare este invalid sau a expirat.");
+        var result = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
+        if (!result)
+            return BadRequest("Codul de resetare este invalid sau a expirat.");
 
-            return Ok(new { message = "Parola a fost resetată cu succes." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return Ok(new { message = "Parola a fost resetată cu succes." });
     }
 
     [Authorize]
@@ -87,17 +80,10 @@ public class AuthController : ControllerBase
         if (!Guid.TryParse(userIdClaim, out var userId))
             return Unauthorized();
 
-        try
-        {
-            var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
-            if (!result)
-                return BadRequest("Parola curentă este incorectă.");
+        var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+        if (!result)
+            return BadRequest("Parola curentă este incorectă.");
 
-            return Ok(new { message = "Parola a fost actualizată cu succes." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return Ok(new { message = "Parola a fost actualizată cu succes." });
     }
 }

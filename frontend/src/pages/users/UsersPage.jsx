@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getUsers, createUser, updateUser, toggleUserActive } from '../../api/usersApi';
+import { extractErrorMessage } from '../../api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -136,7 +137,7 @@ const UsersPage = () => {
             await loadUsers();
             closeModal();
         } catch (err) {
-            setFormError(err.response?.data?.message || err.response?.data || 'Eroare la creare.');
+            setFormError(extractErrorMessage(err, 'Eroare la creare.'));
         } finally {
             setFormLoading(false);
         }
@@ -150,7 +151,7 @@ const UsersPage = () => {
             await loadUsers();
             closeModal();
         } catch (err) {
-            setFormError(err.response?.data?.message || err.response?.data || 'Eroare la actualizare.');
+            setFormError(extractErrorMessage(err, 'Eroare la actualizare.'));
         } finally {
             setFormLoading(false);
         }

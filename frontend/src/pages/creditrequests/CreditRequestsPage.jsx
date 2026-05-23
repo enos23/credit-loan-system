@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAllCreditRequests, createCreditRequest } from '../../api/creditRequestsApi';
 import { getAllClients } from '../../api/clientsApi';
 import { getDecisionsByCreditRequest } from '../../api/decisionsApi';
+import { extractErrorMessage } from '../../api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -253,7 +254,7 @@ const CreditRequestsPage = () => {
       setForm({ clientId: '', amount: '', termMonths: '', purpose: '' });
       fetchData();
     } catch (err) {
-      setError(err.response?.data || 'Eroare la crearea cererii.');
+      setError(extractErrorMessage(err, 'Eroare la crearea cererii.'));
     }
   };
 

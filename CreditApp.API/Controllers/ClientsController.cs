@@ -51,44 +51,23 @@ public class ClientsController : ControllerBase
     [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> Create([FromBody] CreateClientDto dto)
     {
-        try
-        {
-            var client = await _clientService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var client = await _clientService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
     }
 
     [HttpPost("{id:guid}")]
     [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> Update(Guid id, [FromBody] CreateClientDto dto)
     {
-        try
-        {
-            await _clientService.UpdateAsync(id, dto);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        await _clientService.UpdateAsync(id, dto);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            await _clientService.DeleteAsync(id);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        await _clientService.DeleteAsync(id);
+        return NoContent();
     }
 }

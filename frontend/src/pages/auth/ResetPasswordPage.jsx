@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import CreditWiseLogo from '../../components/ui/CreditWiseLogo';
 import { resetPassword } from '../../api/authApi';
+import { extractErrorMessage } from '../../api/errors';
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
@@ -42,7 +43,7 @@ const ResetPasswordPage = () => {
             setSuccess(true);
             setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
-            setError(err.response?.data || 'Codul de resetare este invalid sau a expirat.');
+            setError(extractErrorMessage(err, 'Codul de resetare este invalid sau a expirat.'));
         } finally {
             setLoading(false);
         }

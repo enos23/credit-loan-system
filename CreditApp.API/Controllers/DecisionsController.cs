@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using CreditApp.Application.DTOs.Decision;
-using CreditApp.Application.Exceptions;
 using CreditApp.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,22 +48,7 @@ public class DecisionsController : ControllerBase
         if (!Guid.TryParse(analystIdClaim, out var analystId))
             return Unauthorized();
 
-        try
-        {
-            var decision = await _decisionService.CreateAsync(dto, analystId);
-            return CreatedAtAction(nameof(GetById), new { id = decision.Id }, decision);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (ConflictException ex)
-        {
-            return Conflict(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var decision = await _decisionService.CreateAsync(dto, analystId);
+        return CreatedAtAction(nameof(GetById), new { id = decision.Id }, decision);
     }
 }

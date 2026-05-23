@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, MailCheck, Copy, Check, KeyRound } from 'lucide-react';
 import CreditWiseLogo from '../../components/ui/CreditWiseLogo';
 import { forgotPassword } from '../../api/authApi';
+import { extractErrorMessage } from '../../api/errors';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
@@ -25,8 +26,7 @@ const ForgotPasswordPage = () => {
             setSubmitted(true);
             if (res.data.token) setToken(res.data.token);
         } catch (err) {
-            if (err.response?.status === 429) setError(err.response.data);
-            else setError('A apărut o eroare. Încercați din nou.');
+            setError(extractErrorMessage(err, 'A apărut o eroare. Încercați din nou.'));
         } finally {
             setLoading(false);
         }
