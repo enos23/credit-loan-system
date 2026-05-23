@@ -9,7 +9,7 @@ const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/credit-requests', label: 'Cereri Credit', icon: FileText },
     { path: '/clients', label: 'Clienți', icon: Users },
-    { path: '/decisions', label: 'Panel Analist', icon: Scale },
+    { path: '/decisions', label: 'Panel Analist', icon: Scale, roles: ['Admin', 'Analyst'] },
     { path: '/transactions', label: 'Tranzacții', icon: CreditCard },
     { path: '/reports', label: 'Rapoarte', icon: PieChart },
     { path: '/settings', label: 'Setări', icon: Settings },
@@ -18,6 +18,8 @@ const menuItems = [
 const adminMenuItems = [
     { path: '/users', label: 'Utilizatori', icon: ShieldCheck },
 ];
+
+const visibleTo = (item, role) => !item.roles || item.roles.includes(role);
 
 const Sidebar = () => {
     const navigate = useNavigate();
@@ -54,7 +56,7 @@ const Sidebar = () => {
             </div>
 
             <nav className="flex-1 px-4 space-y-1.5 flex flex-col pt-4">
-                {menuItems.map(renderMenuItem)}
+                {menuItems.filter(item => visibleTo(item, user?.role)).map(renderMenuItem)}
 
                 {user?.role === 'Admin' && (
                     <div className="mt-3 pt-3 border-t border-slate-200/60 space-y-1.5">

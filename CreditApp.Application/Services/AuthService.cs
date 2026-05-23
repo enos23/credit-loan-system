@@ -10,6 +10,7 @@ using System.Text;
 using BCrypt.Net;
 using CreditApp.Application.DTOs.Auth;
 using CreditApp.Application.Services.Interfaces;
+using CreditApp.Application.Validation;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
 using CreditApp.Domain.Interfaces;
@@ -72,6 +73,8 @@ public class AuthService : IAuthService
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword)
     {
+        PasswordValidator.EnsureValid(newPassword);
+
         var user = await _userRepository.GetByResetTokenAsync(token);
         if (user == null || user.ResetPasswordTokenExpiry < DateTime.UtcNow)
             return false;
@@ -79,12 +82,15 @@ public class AuthService : IAuthService
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.ResetPasswordToken = null;
         user.ResetPasswordTokenExpiry = null;
+        user.SecurityStamp = Guid.NewGuid();
         await _userRepository.UpdateAsync(user);
         return true;
     }
 
     public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
+        PasswordValidator.EnsureValid(newPassword);
+
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null) return false;
 
@@ -92,6 +98,7 @@ public class AuthService : IAuthService
             return false;
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.SecurityStamp = Guid.NewGuid();
         await _userRepository.UpdateAsync(user);
         return true;
     }
@@ -125,7 +132,8 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
+            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+            new Claim("security_stamp", user.SecurityStamp.ToString())
         };
 
         var token = new JwtSecurityToken(

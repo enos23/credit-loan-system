@@ -3,6 +3,7 @@ using CreditApp.Application.DTOs.Auth;
 using CreditApp.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 
 namespace CreditApp.API.Controllers;
@@ -13,13 +14,16 @@ namespace CreditApp.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IWebHostEnvironment _env;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IWebHostEnvironment env)
     {
         _authService = authService;
+        _env = env;
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
@@ -43,24 +47,36 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    // TODO: when email sending is wired up, deliver the token via email and stop returning it here entirely.
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         var token = await _authService.ForgotPasswordAsync(dto.Email);
-        if (token == null)
-            return Ok(new { message = "Dacă adresa există în sistem, veți primi un cod de resetare." });
+        const string message = "Dacă adresa există în sistem, veți primi un cod de resetare.";
 
-        return Ok(new { token, message = "Cod de resetare generat." });
+        if (token != null && _env.IsDevelopment())
+            return Ok(new { token, message });
+
+        return Ok(new { message });
     }
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
-        var result = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
-        if (!result)
-            return BadRequest("Codul de resetare este invalid sau a expirat.");
+        try
+        {
+            var result = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
+            if (!result)
+                return BadRequest("Codul de resetare este invalid sau a expirat.");
 
-        return Ok(new { message = "Parola a fost resetată cu succes." });
+            return Ok(new { message = "Parola a fost resetată cu succes." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [Authorize]
@@ -71,10 +87,17 @@ public class AuthController : ControllerBase
         if (!Guid.TryParse(userIdClaim, out var userId))
             return Unauthorized();
 
-        var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
-        if (!result)
-            return BadRequest("Parola curentă este incorectă.");
+        try
+        {
+            var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+            if (!result)
+                return BadRequest("Parola curentă este incorectă.");
 
-        return Ok(new { message = "Parola a fost actualizată cu succes." });
+            return Ok(new { message = "Parola a fost actualizată cu succes." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

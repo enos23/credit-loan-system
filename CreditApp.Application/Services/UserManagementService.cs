@@ -1,5 +1,6 @@
 using CreditApp.Application.DTOs.Users;
 using CreditApp.Application.Services.Interfaces;
+using CreditApp.Application.Validation;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
 using CreditApp.Domain.Interfaces;
@@ -23,6 +24,8 @@ public class UserManagementService : IUserManagementService
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
     {
+        PasswordValidator.EnsureValid(dto.Password);
+
         var existing = await _userRepository.GetByEmailAsync(dto.Email);
         if (existing != null)
             throw new InvalidOperationException("Un utilizator cu acest email există deja.");
@@ -66,6 +69,8 @@ public class UserManagementService : IUserManagementService
         if (user == null) return false;
 
         user.IsActive = !user.IsActive;
+        if (!user.IsActive)
+            user.SecurityStamp = Guid.NewGuid();
         await _userRepository.UpdateAsync(user);
         return user.IsActive;
     }

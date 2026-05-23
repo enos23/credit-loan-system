@@ -31,7 +31,8 @@ const SecurityPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (!form.current) { setError('Introdu parola curentă.'); return; }
-        if (form.newPass.length < 6) { setError('Parola nouă trebuie să aibă cel puțin 6 caractere.'); return; }
+        if (form.newPass.length < 8) { setError('Parola nouă trebuie să aibă cel puțin 8 caractere.'); return; }
+        if (!/[A-Za-z]/.test(form.newPass) || !/\d/.test(form.newPass)) { setError('Parola trebuie să conțină cel puțin o literă și o cifră.'); return; }
         if (form.newPass !== form.confirm) { setError('Parolele nu coincid.'); return; }
         setError('');
         try {
@@ -90,7 +91,7 @@ const SecurityPage = () => {
                 </h2>
 
                 <PasswordField label="Parola Curentă" name="current" placeholder="••••••••" />
-                <PasswordField label="Parola Nouă" name="newPass" placeholder="Minim 6 caractere" />
+                <PasswordField label="Parola Nouă" name="newPass" placeholder="Minim 8 caractere, o literă și o cifră" />
                 <PasswordField label="Confirmă Parola Nouă" name="confirm" placeholder="Repetă parola nouă" />
 
                 {error && (

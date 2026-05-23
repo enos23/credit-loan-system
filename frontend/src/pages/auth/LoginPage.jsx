@@ -155,7 +155,8 @@ const LoginPage = () => {
             await login({ email, password });
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+            if (err.response?.status === 429) setError(err.response.data);
+            else setError(err.response?.data?.message || 'Login failed');
         } finally {
             setLoading(false);
         }

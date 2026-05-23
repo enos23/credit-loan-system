@@ -24,8 +24,12 @@ const ResetPasswordPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (form.newPassword.length < 6) {
-            setError('Parola trebuie să aibă cel puțin 6 caractere.');
+        if (form.newPassword.length < 8) {
+            setError('Parola trebuie să aibă cel puțin 8 caractere.');
+            return;
+        }
+        if (!/[A-Za-z]/.test(form.newPassword) || !/\d/.test(form.newPassword)) {
+            setError('Parola trebuie să conțină cel puțin o literă și o cifră.');
             return;
         }
         if (form.newPassword !== form.confirm) {
@@ -91,7 +95,7 @@ const ResetPasswordPage = () => {
                                     <Input
                                         id="newPassword"
                                         type={show.newPassword ? 'text' : 'password'}
-                                        placeholder="Minim 6 caractere"
+                                        placeholder="Minim 8 caractere"
                                         value={form.newPassword}
                                         onChange={e => setForm({ ...form, newPassword: e.target.value })}
                                         required

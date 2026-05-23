@@ -24,4 +24,5 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? ResetPasswordToken { get; set; }
     public DateTime? ResetPasswordTokenExpiry { get; set; }
+    public Guid SecurityStamp { get; set; } = Guid.NewGuid();
 }

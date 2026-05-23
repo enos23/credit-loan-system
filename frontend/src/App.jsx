@@ -16,18 +16,11 @@ import SettingsPage from './pages/settings/SettingsPage';
 import SecurityPage from './pages/security/SecurityPage';
 import HelpPage from './pages/help/HelpPage';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Se încarcă...</div>;
   if (!user) return <Navigate to="/login" />;
-  return <MainLayout>{children}</MainLayout>;
-};
-
-const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div>Se încarcă...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (user.role !== 'Admin') return <Navigate to="/dashboard" />;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
   return <MainLayout>{children}</MainLayout>;
 };
 
@@ -39,11 +32,11 @@ const App = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+          <Route path="/users" element={<ProtectedRoute roles={['Admin']}><UsersPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
           <Route path="/credit-requests" element={<ProtectedRoute><CreditRequestsPage /></ProtectedRoute>} />
-          <Route path="/decisions" element={<ProtectedRoute><DecisionPanel /></ProtectedRoute>} />
+          <Route path="/decisions" element={<ProtectedRoute roles={['Admin', 'Analyst']}><DecisionPanel /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><TransactionsPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

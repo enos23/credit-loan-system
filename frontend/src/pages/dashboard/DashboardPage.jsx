@@ -328,9 +328,11 @@ const DashboardPage = () => {
                                     <p className="text-sm font-bold text-slate-800">{data?.pendingCount ?? 0} în așteptare</p>
                                     <p className="text-xs text-slate-500">Necesită procesare</p>
                                 </div>
-                                <button onClick={() => navigate('/decisions')} className="text-xs text-amber-600 font-semibold hover:text-amber-800 shrink-0">
-                                    Procesează
-                                </button>
+                                {['Admin', 'Analyst'].includes(user?.role) && (
+                                    <button onClick={() => navigate('/decisions')} className="text-xs text-amber-600 font-semibold hover:text-amber-800 shrink-0">
+                                        Procesează
+                                    </button>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-4 p-3 rounded-2xl bg-red-50 border border-red-100">
@@ -341,9 +343,11 @@ const DashboardPage = () => {
                                     <p className="text-sm font-bold text-slate-800">{data?.rejectedCount ?? 0} respinse</p>
                                     <p className="text-xs text-slate-500">Cereri blocate</p>
                                 </div>
-                                <button onClick={() => navigate('/decisions')} className="text-xs text-red-500 font-semibold hover:text-red-700 shrink-0">
-                                    Detalii
-                                </button>
+                                {['Admin', 'Analyst'].includes(user?.role) && (
+                                    <button onClick={() => navigate('/decisions')} className="text-xs text-red-500 font-semibold hover:text-red-700 shrink-0">
+                                        Detalii
+                                    </button>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
