@@ -1,11 +1,9 @@
-﻿using CreditApp.Application.DTOs.Decision;
+using System.Security.Claims;
+using CreditApp.Application.DTOs.Decision;
+using CreditApp.Application.Exceptions;
 using CreditApp.Application.Services.Interfaces;
-using CreditApp.Domain.Entities;
-using CreditApp.Domain.Enums;
-using CreditApp.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Runtime.CompilerServices;
 
 namespace CreditApp.API.Controllers;
 
@@ -14,99 +12,59 @@ namespace CreditApp.API.Controllers;
 [Authorize]
 public class DecisionsController : ControllerBase
 {
-    private readonly IDecisionRepository _decisionRepository;
-    private readonly ICreditRequestRepository _creditRequestRepository;
+    private readonly IDecisionService _decisionService;
 
-    public DecisionsController(
-        IDecisionRepository decisionRepository,
-        ICreditRequestRepository creditRequestRepository)
+    public DecisionsController(IDecisionService decisionService)
     {
-        _decisionRepository = decisionRepository;
-        _creditRequestRepository = creditRequestRepository;
+        _decisionService = decisionService;
     }
 
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var decision = await _decisionRepository.GetByIdAsync(id);
-        if (decision == null) 
+        var decision = await _decisionService.GetByIdAsync(id);
+        if (decision == null)
             return NotFound("Decizia nu a fost găsită.");
 
-        return Ok(MapToDto(decision));
+        return Ok(decision);
     }
 
     [HttpGet("credit-request/{creditRequestId:guid}")]
     [Authorize(Roles = "Admin,Analyst,Banker")]
     public async Task<IActionResult> GetByCreditRequestId(Guid creditRequestId)
     {
-        var decision = await _decisionRepository.GetByCreditRequestIdAsync(creditRequestId);
+        var decision = await _decisionService.GetByCreditRequestIdAsync(creditRequestId);
         if (decision == null)
             return NotFound("Decizia nu a fost găsită.");
 
-        return Ok(MapToDto(decision));
+        return Ok(decision);
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin,Analyst")]
     public async Task<IActionResult> Create([FromBody] CreateDecisionDto dto)
     {
+        var analystIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(analystIdClaim, out var analystId))
+            return Unauthorized();
+
         try
         {
-            var creditRequest = await _creditRequestRepository.GetByIdAsync(dto.CreditRequestId);
-            if (creditRequest == null)
-                return NotFound("Cererea de credit nu a fost găsită.");
-
-            var existingDecision = await _decisionRepository.GetByCreditRequestIdAsync(dto.CreditRequestId);
-            if (existingDecision != null)
-                return Conflict("Există deja o decizie pentru această cerere de credit.");
-
-            var analystId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (analystId == null)
-                return Unauthorized();
-
-            if (!Enum.TryParse<DecisionType>(dto.DecisionType, out var decisionType))
-                return BadRequest($"Tipul de decizie '{dto.DecisionType}' nu este valid.");
-
-            var decision = new Decision
-            {
-                CreditRequestId = dto.CreditRequestId,
-                AnalystId = Guid.Parse(analystId),
-                DecisionType = decisionType,
-                InterestRate = dto.InterestRate,
-                ApprovedAmount = dto.ApprovedAmount,
-                Notes = dto.Notes,
-            };
-
-            await _decisionRepository.AddAsync(decision);
-
-            creditRequest.Status = decision.DecisionType == DecisionType.Approved
-                ? CreditStatus.Approved
-                : decision.DecisionType == DecisionType.Rejected
-                    ? CreditStatus.Rejected
-                    : CreditStatus.Pending;
-
-            await _creditRequestRepository.UpdateAsync(creditRequest);
-
-            return CreatedAtAction(nameof(GetById), new { id = decision.Id }, MapToDto(decision));
+            var decision = await _decisionService.CreateAsync(dto, analystId);
+            return CreatedAtAction(nameof(GetById), new { id = decision.Id }, decision);
         }
-        catch  (InvalidOperationException ex)
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
     }
-
-    private static DecisionDto MapToDto(Decision decision) => new()
-    {
-        Id = decision.Id,
-        CreditRequestId = decision.CreditRequestId,
-        AnalystFullName = decision.Analyst != null
-            ? $"{decision.Analyst.FirstName} {decision.Analyst.LastName}"
-            : string.Empty,
-        DecisionType = decision.DecisionType.ToString(),
-        InterestRate = decision.InterestRate,
-        ApprovedAmount = decision.ApprovedAmount,
-        Notes = decision.Notes,
-        CreatedAt = decision.CreatedAt
-    };
 }
