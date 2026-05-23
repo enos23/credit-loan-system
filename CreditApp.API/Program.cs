@@ -1,5 +1,6 @@
 using BCrypt.Net;
 using CreditApp.Application;
+using CreditApp.Application.Configuration;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
 using CreditApp.Domain.Interfaces;
@@ -25,9 +26,9 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 //JWT Authentification
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"];
-if (string.IsNullOrWhiteSpace(secretKey))
+var jwtSection = builder.Configuration.GetSection("JwtSettings");
+var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings();
+if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
     throw new InvalidOperationException(
         "JwtSettings:SecretKey is not configured. Set it via `dotnet user-secrets set \"JwtSettings:SecretKey\" \"<value>\"` " +
         "or the JwtSettings__SecretKey environment variable.");
@@ -36,6 +37,8 @@ if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Default
     throw new InvalidOperationException(
         "ConnectionStrings:DefaultConnection is not configured. Set it via `dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<value>\"` " +
         "or the ConnectionStrings__DefaultConnection environment variable.");
+
+builder.Services.Configure<JwtSettings>(jwtSection);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -50,10 +53,10 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(secretKey))
+            Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
     };
     options.Events = new JwtBearerEvents
     {

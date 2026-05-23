@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using CreditApp.Application.Interfaces.Queries;
 using CreditApp.Domain.Interfaces;
 using CreditApp.Infrastructure.Data;
+using CreditApp.Infrastructure.Queries;
 using CreditApp.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<ICreditRequestRepository, CreditRequestRepository>();
         services.AddScoped<IDecisionRepository, DecisionRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddScoped<IDashboardQueries, DashboardQueries>();
 
         return services;
     }

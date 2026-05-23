@@ -17,6 +17,26 @@ const Toggle = ({ checked, onChange }) => (
     </button>
 );
 
+const PasswordField = ({ label, name, placeholder, value, show, onChange, onToggleShow }) => (
+    <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">{label}</label>
+        <div className="relative">
+            <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
+            <input
+                type={show ? 'text' : 'password'}
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+            />
+            <button type="button" onClick={onToggleShow} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
+                {show ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+        </div>
+    </div>
+);
+
 const SecurityPage = () => {
     const [form, setForm] = useState({ current: '', newPass: '', confirm: '' });
     const [show, setShow] = useState({ current: false, newPass: false, confirm: false });
@@ -45,26 +65,6 @@ const SecurityPage = () => {
         }
     };
 
-    const PasswordField = ({ label, name, placeholder }) => (
-        <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">{label}</label>
-            <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input
-                    type={show[name] ? 'text' : 'password'}
-                    name={name}
-                    value={form[name]}
-                    onChange={handleChange}
-                    placeholder={placeholder}
-                    className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
-                />
-                <button type="button" onClick={() => toggleShow(name)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
-                    {show[name] ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-            </div>
-        </div>
-    );
-
     return (
         <div className="max-w-2xl mx-auto space-y-6 pb-12">
             <style>{`
@@ -90,9 +90,12 @@ const SecurityPage = () => {
                     <Lock size={16} className="text-blue-500" /> Schimbă Parola
                 </h2>
 
-                <PasswordField label="Parola Curentă" name="current" placeholder="••••••••" />
-                <PasswordField label="Parola Nouă" name="newPass" placeholder="Minim 8 caractere, o literă și o cifră" />
-                <PasswordField label="Confirmă Parola Nouă" name="confirm" placeholder="Repetă parola nouă" />
+                <PasswordField label="Parola Curentă" name="current" placeholder="••••••••"
+                    value={form.current} show={show.current} onChange={handleChange} onToggleShow={() => toggleShow('current')} />
+                <PasswordField label="Parola Nouă" name="newPass" placeholder="Minim 8 caractere, o literă și o cifră"
+                    value={form.newPass} show={show.newPass} onChange={handleChange} onToggleShow={() => toggleShow('newPass')} />
+                <PasswordField label="Confirmă Parola Nouă" name="confirm" placeholder="Repetă parola nouă"
+                    value={form.confirm} show={show.confirm} onChange={handleChange} onToggleShow={() => toggleShow('confirm')} />
 
                 {error && (
                     <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 px-4 py-2.5 rounded-xl">
