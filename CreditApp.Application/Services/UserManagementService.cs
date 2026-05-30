@@ -55,9 +55,14 @@ public class UserManagementService : IUserManagementService
         if (!Enum.TryParse<UserRole>(dto.Role, out var role))
             throw new InvalidOperationException($"Rolul '{dto.Role}' nu este valid.");
 
+        var oldRole = user.Role;
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
         user.Role = role;
+        // A role change invalidates the user's current JWT (which carries the old role as a claim).
+        // Bumping the stamp forces a re-login so the next session has the correct authz claims.
+        if (oldRole != role)
+            user.SecurityStamp = Guid.NewGuid();
 
         await _userRepository.UpdateAsync(user);
         return MapToDto(user);
