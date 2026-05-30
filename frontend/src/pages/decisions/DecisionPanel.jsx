@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getAllCreditRequests } from '../../api/creditRequestsApi';
 import { createDecision } from '../../api/decisionsApi';
+import { extractErrorMessage } from '../../api/errors';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -97,7 +98,7 @@ const DecisionPanel = () => {
             setOpen(false);
             fetchRequests();
         } catch (err) {
-            setError(err.response?.data || 'Eroare la salvarea deciziei.');
+            setError(extractErrorMessage(err, 'Eroare la salvarea deciziei.'));
         }
     };
 

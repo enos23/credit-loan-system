@@ -54,7 +54,6 @@ public class CreditRequestService : ICreditRequestService
 
         int score = _scoringService.CalculateScore(client, dto.Amount, dto.TermMonths);
         string riskLevel = _scoringService.DetermineRiskLevel(score);
-        string decision = _scoringService.DetermineDecision(score);
 
         var creditRequest = new CreditRequest
         {
@@ -62,11 +61,7 @@ public class CreditRequestService : ICreditRequestService
             Amount = dto.Amount,
             TermMonths = dto.TermMonths,
             Purpose = dto.Purpose,
-            Status = decision == "Approved"
-                ? CreditStatus.Approved
-                : decision == "Rejected"
-                    ? CreditStatus.Rejected
-                    : CreditStatus.Pending,
+            Status = CreditStatus.Pending,
             CreditScore = score,
             RiskLevel = Enum.Parse<RiskLevel>(riskLevel)
         };
@@ -81,7 +76,10 @@ public class CreditRequestService : ICreditRequestService
         if (creditRequest == null)
             throw new InvalidOperationException("Cererea de credit nu a fost gasită.");
 
-        creditRequest.Status = Enum.Parse<CreditStatus>(status);
+        if (!Enum.TryParse<CreditStatus>(status, out var parsedStatus))
+            throw new InvalidOperationException($"Statusul '{status}' nu este valid.");
+
+        creditRequest.Status = parsedStatus;
         await _creditRequestRepository.UpdateAsync(creditRequest);
     }
 

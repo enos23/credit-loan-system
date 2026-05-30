@@ -27,6 +27,4 @@ public class CreditRequest
     public Client Client { get; set; } = null!;
     public User? AssignedAnalyst { get; set; }
     public Decision? Decision { get; set; }
-    public ICollection<Document> Documents { get; set; } = new List<Document>();
-
 }

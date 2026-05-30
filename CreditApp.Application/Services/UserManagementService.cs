@@ -1,5 +1,6 @@
 using CreditApp.Application.DTOs.Users;
 using CreditApp.Application.Services.Interfaces;
+using CreditApp.Application.Validation;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
 using CreditApp.Domain.Interfaces;
@@ -23,9 +24,14 @@ public class UserManagementService : IUserManagementService
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
     {
+        PasswordValidator.EnsureValid(dto.Password);
+
         var existing = await _userRepository.GetByEmailAsync(dto.Email);
         if (existing != null)
             throw new InvalidOperationException("Un utilizator cu acest email există deja.");
+
+        if (!Enum.TryParse<UserRole>(dto.Role, out var role))
+            throw new InvalidOperationException($"Rolul '{dto.Role}' nu este valid.");
 
         var user = new User
         {
@@ -33,7 +39,7 @@ public class UserManagementService : IUserManagementService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Role = Enum.Parse<UserRole>(dto.Role),
+            Role = role,
             IsActive = true
         };
 
@@ -46,9 +52,12 @@ public class UserManagementService : IUserManagementService
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null) return null;
 
+        if (!Enum.TryParse<UserRole>(dto.Role, out var role))
+            throw new InvalidOperationException($"Rolul '{dto.Role}' nu este valid.");
+
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
-        user.Role = Enum.Parse<UserRole>(dto.Role);
+        user.Role = role;
 
         await _userRepository.UpdateAsync(user);
         return MapToDto(user);
@@ -60,6 +69,8 @@ public class UserManagementService : IUserManagementService
         if (user == null) return false;
 
         user.IsActive = !user.IsActive;
+        if (!user.IsActive)
+            user.SecurityStamp = Guid.NewGuid();
         await _userRepository.UpdateAsync(user);
         return user.IsActive;
     }

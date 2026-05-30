@@ -12,6 +12,5 @@ public interface IScoringService
 {
     int CalculateScore(Client client, decimal requestedAmount, int termMonths);
     string DetermineRiskLevel(int score);
-    string DetermineDecision(int score);
     decimal SuggestInterestRate(int score);
 }

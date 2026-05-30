@@ -25,7 +25,6 @@ public class CreditRequestRepository : ICreditRequestRepository
         return await _context.CreditRequests
             .Include(cr => cr.Client)
             .Include(cr => cr.Decision)
-            .Include(cr => cr.Documents)
             .Include(cr => cr.AssignedAnalyst)
             .FirstOrDefaultAsync(cr => cr.Id == id);
     }

@@ -3,6 +3,7 @@ using CreditApp.Application.DTOs.Auth;
 using CreditApp.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 
 namespace CreditApp.API.Controllers;
@@ -13,13 +14,16 @@ namespace CreditApp.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IWebHostEnvironment _env;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IWebHostEnvironment env)
     {
         _authService = authService;
+        _env = env;
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
@@ -43,17 +47,22 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    // TODO: when email sending is wired up, deliver the token via email and stop returning it here entirely.
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         var token = await _authService.ForgotPasswordAsync(dto.Email);
-        if (token == null)
-            return Ok(new { message = "Dacă adresa există în sistem, veți primi un cod de resetare." });
+        const string message = "Dacă adresa există în sistem, veți primi un cod de resetare.";
 
-        return Ok(new { token, message = "Cod de resetare generat." });
+        if (token != null && _env.IsDevelopment())
+            return Ok(new { token, message });
+
+        return Ok(new { message });
     }
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
         var result = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);

@@ -27,15 +27,8 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
-        try
-        {
-            var user = await _userManagementService.CreateUserAsync(dto);
-            return Ok(user);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var user = await _userManagementService.CreateUserAsync(dto);
+        return Ok(user);
     }
 
     [HttpPut("{id}")]

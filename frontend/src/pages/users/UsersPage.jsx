@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getUsers, createUser, updateUser, toggleUserActive } from '../../api/usersApi';
+import { extractErrorMessage } from '../../api/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,7 +88,7 @@ const UserForm = ({ initial, onSubmit, loading, error, isEdit }) => {
                     <Label htmlFor="password" className="text-xs font-semibold text-slate-700 ml-1">Parolă</Label>
                     <div className="relative">
                         <Input id="password" name="password" type={showPassword ? 'text' : 'password'} value={form.password}
-                            onChange={handleChange} required minLength={6} placeholder="Minim 6 caractere"
+                            onChange={handleChange} required minLength={8} placeholder="Minim 8 caractere, o literă și o cifră"
                             className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus-visible:ring-1 focus-visible:ring-slate-400 pr-10 px-4" />
                         <button type="button" onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors">
@@ -136,7 +137,7 @@ const UsersPage = () => {
             await loadUsers();
             closeModal();
         } catch (err) {
-            setFormError(err.response?.data?.message || err.response?.data || 'Eroare la creare.');
+            setFormError(extractErrorMessage(err, 'Eroare la creare.'));
         } finally {
             setFormLoading(false);
         }
@@ -150,7 +151,7 @@ const UsersPage = () => {
             await loadUsers();
             closeModal();
         } catch (err) {
-            setFormError(err.response?.data?.message || err.response?.data || 'Eroare la actualizare.');
+            setFormError(extractErrorMessage(err, 'Eroare la actualizare.'));
         } finally {
             setFormLoading(false);
         }

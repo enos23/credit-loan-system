@@ -8,12 +8,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BCrypt.Net;
+using CreditApp.Application.Configuration;
 using CreditApp.Application.DTOs.Auth;
 using CreditApp.Application.Services.Interfaces;
+using CreditApp.Application.Validation;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
 using CreditApp.Domain.Interfaces;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CreditApp.Application.Services;
@@ -21,12 +23,12 @@ namespace CreditApp.Application.Services;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
 
-    public AuthService(IUserRepository userRepository, IConfiguration configuration)
+    public AuthService(IUserRepository userRepository, IOptions<JwtSettings> jwtOptions)
     {
         _userRepository = userRepository;
-        _configuration = configuration;
+        _jwtSettings = jwtOptions.Value;
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
@@ -72,6 +74,8 @@ public class AuthService : IAuthService
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword)
     {
+        PasswordValidator.EnsureValid(newPassword);
+
         var user = await _userRepository.GetByResetTokenAsync(token);
         if (user == null || user.ResetPasswordTokenExpiry < DateTime.UtcNow)
             return false;
@@ -79,12 +83,15 @@ public class AuthService : IAuthService
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.ResetPasswordToken = null;
         user.ResetPasswordTokenExpiry = null;
+        user.SecurityStamp = Guid.NewGuid();
         await _userRepository.UpdateAsync(user);
         return true;
     }
 
     public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
+        PasswordValidator.EnsureValid(newPassword);
+
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null) return false;
 
@@ -92,6 +99,7 @@ public class AuthService : IAuthService
             return false;
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.SecurityStamp = Guid.NewGuid();
         await _userRepository.UpdateAsync(user);
         return true;
     }
@@ -105,8 +113,7 @@ public class AuthService : IAuthService
             Email = user.Email,
             FullName = $"{user.FirstName} {user.LastName}",
             Role = user.Role.ToString(),
-            ExpiresAt = DateTime.UtcNow.AddDays(
-                double.Parse(_configuration["JwtSettings:ExpiresInDays"] ?? "7")),
+            ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.ExpiresInDays),
             Phone = user.Phone,
             Bio = user.Bio,
             AvatarGradient = user.AvatarGradient,
@@ -115,9 +122,7 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(User user)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!));
-
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -125,17 +130,17 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
+            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+            new Claim("security_stamp", user.SecurityStamp.ToString())
         };
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["JwtSettings:Issuer"],
-            audience: _configuration["JwtSettings:Audience"],
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(
-                double.Parse(_configuration["JwtSettings:ExpiresInDays"] ?? "7")),
+            expires: DateTime.UtcNow.AddDays(_jwtSettings.ExpiresInDays),
             signingCredentials: credentials
-            );
+        );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

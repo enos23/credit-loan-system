@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Lock, Eye, EyeOff, Shield, Monitor, Smartphone, CheckCircle, AlertTriangle, LogOut } from 'lucide-react';
 import { changePassword } from '../../api/authApi';
+import { extractErrorMessage } from '../../api/errors';
 
 const SESSIONS = [
     { device: 'Chrome / Windows 11', location: 'București, România', time: 'Acum — sesiune curentă', current: true, Icon: Monitor },
@@ -17,6 +18,26 @@ const Toggle = ({ checked, onChange }) => (
     </button>
 );
 
+const PasswordField = ({ label, name, placeholder, value, show, onChange, onToggleShow }) => (
+    <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">{label}</label>
+        <div className="relative">
+            <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
+            <input
+                type={show ? 'text' : 'password'}
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+            />
+            <button type="button" onClick={onToggleShow} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
+                {show ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+        </div>
+    </div>
+);
+
 const SecurityPage = () => {
     const [form, setForm] = useState({ current: '', newPass: '', confirm: '' });
     const [show, setShow] = useState({ current: false, newPass: false, confirm: false });
@@ -31,7 +52,8 @@ const SecurityPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (!form.current) { setError('Introdu parola curentă.'); return; }
-        if (form.newPass.length < 6) { setError('Parola nouă trebuie să aibă cel puțin 6 caractere.'); return; }
+        if (form.newPass.length < 8) { setError('Parola nouă trebuie să aibă cel puțin 8 caractere.'); return; }
+        if (!/[A-Za-z]/.test(form.newPass) || !/\d/.test(form.newPass)) { setError('Parola trebuie să conțină cel puțin o literă și o cifră.'); return; }
         if (form.newPass !== form.confirm) { setError('Parolele nu coincid.'); return; }
         setError('');
         try {
@@ -40,29 +62,9 @@ const SecurityPage = () => {
             setForm({ current: '', newPass: '', confirm: '' });
             setTimeout(() => setSaved(false), 3000);
         } catch (err) {
-            setError(err.response?.data || 'Parola curentă este incorectă.');
+            setError(extractErrorMessage(err, 'Parola curentă este incorectă.'));
         }
     };
-
-    const PasswordField = ({ label, name, placeholder }) => (
-        <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">{label}</label>
-            <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input
-                    type={show[name] ? 'text' : 'password'}
-                    name={name}
-                    value={form[name]}
-                    onChange={handleChange}
-                    placeholder={placeholder}
-                    className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
-                />
-                <button type="button" onClick={() => toggleShow(name)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
-                    {show[name] ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-            </div>
-        </div>
-    );
 
     return (
         <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -89,9 +91,12 @@ const SecurityPage = () => {
                     <Lock size={16} className="text-blue-500" /> Schimbă Parola
                 </h2>
 
-                <PasswordField label="Parola Curentă" name="current" placeholder="••••••••" />
-                <PasswordField label="Parola Nouă" name="newPass" placeholder="Minim 6 caractere" />
-                <PasswordField label="Confirmă Parola Nouă" name="confirm" placeholder="Repetă parola nouă" />
+                <PasswordField label="Parola Curentă" name="current" placeholder="••••••••"
+                    value={form.current} show={show.current} onChange={handleChange} onToggleShow={() => toggleShow('current')} />
+                <PasswordField label="Parola Nouă" name="newPass" placeholder="Minim 8 caractere, o literă și o cifră"
+                    value={form.newPass} show={show.newPass} onChange={handleChange} onToggleShow={() => toggleShow('newPass')} />
+                <PasswordField label="Confirmă Parola Nouă" name="confirm" placeholder="Repetă parola nouă"
+                    value={form.confirm} show={show.confirm} onChange={handleChange} onToggleShow={() => toggleShow('confirm')} />
 
                 {error && (
                     <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 px-4 py-2.5 rounded-xl">

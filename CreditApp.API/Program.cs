@@ -1,13 +1,19 @@
 using BCrypt.Net;
+using CreditApp.API.Middleware;
 using CreditApp.Application;
+using CreditApp.Application.Configuration;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
+using CreditApp.Domain.Interfaces;
 using CreditApp.Infrastructure;
 using CreditApp.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,14 +21,27 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 //Clean Architecture layers
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 //JWT Authentification
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"]!;
+var jwtSection = builder.Configuration.GetSection("JwtSettings");
+var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings();
+if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
+    throw new InvalidOperationException(
+        "JwtSettings:SecretKey is not configured. Set it via `dotnet user-secrets set \"JwtSettings:SecretKey\" \"<value>\"` " +
+        "or the JwtSettings__SecretKey environment variable.");
+
+if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("DefaultConnection")))
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection is not configured. Set it via `dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<value>\"` " +
+        "or the ConnectionStrings__DefaultConnection environment variable.");
+
+builder.Services.Configure<JwtSettings>(jwtSection);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -37,14 +56,53 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(secretKey))
+            Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var userIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var stampClaim = context.Principal?.FindFirst("security_stamp")?.Value;
+            if (!Guid.TryParse(userIdClaim, out var userId) || string.IsNullOrEmpty(stampClaim))
+            {
+                context.Fail("Token claims missing.");
+                return;
+            }
+
+            var userRepository = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+            var user = await userRepository.GetByIdAsync(userId);
+            if (user is null || !user.IsActive || user.SecurityStamp.ToString() != stampClaim)
+                context.Fail("Token no longer valid.");
+        }
     };
 });
 
 builder.Services.AddAuthorization();
+
+// Rate limiting for sensitive auth endpoints — shared budget per remote IP.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "text/plain";
+        await context.HttpContext.Response.WriteAsync(
+            "Prea multe încercări. Vă rugăm să încercați din nou peste un minut.", token);
+    };
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 // CORS
 builder.Services.AddCors(options =>
@@ -60,6 +118,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Middleware pipeline
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -68,6 +128,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReact");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
@@ -81,11 +142,18 @@ using (var scope = app.Services.CreateScope())
     bool adminExists = await db.Users.AnyAsync(u => u.Role == UserRole.Admin);
     if (!adminExists)
     {
+        var adminEmail = builder.Configuration["Seed:AdminEmail"];
+        var adminPassword = builder.Configuration["Seed:AdminPassword"];
+        if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+            throw new InvalidOperationException(
+                "No admin user exists and Seed:AdminEmail / Seed:AdminPassword are not configured. " +
+                "Set both via `dotnet user-secrets set` or environment variables before first run.");
+
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
-            Email = "admin@creditwise.ro",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234"),
+            Email = adminEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
             FirstName = "Administrator",
             LastName = "System",
             Role = UserRole.Admin,

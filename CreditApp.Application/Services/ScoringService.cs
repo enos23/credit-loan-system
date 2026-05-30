@@ -71,14 +71,6 @@ public class ScoringService : IScoringService
         _ => "High"
     };
 
-    public string DetermineDecision(int score) => score switch
-    {
-        >= 80 => "Approved",
-        >= 60 => "Approved",
-        >= 40 => "NeedsMoreInfo",
-        _ => "Rejected"
-    };
-
     public decimal SuggestInterestRate(int score) => score switch
     {
         >= 80 => 5.5m,
