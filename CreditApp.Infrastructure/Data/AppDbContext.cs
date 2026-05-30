@@ -60,6 +60,10 @@ public class AppDbContext : DbContext
                   .WithMany(c => c.CreditRequests)
                   .HasForeignKey(e => e.ClientId)
                   .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedAnalyst)
+                  .WithMany()
+                  .HasForeignKey(e => e.AssignedAnalystId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         //Decision
@@ -72,6 +76,10 @@ public class AppDbContext : DbContext
                   .WithOne(cr => cr.Decision)
                   .HasForeignKey<Decision>(e => e.CreditRequestId)
                   .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Analyst)
+                  .WithMany()
+                  .HasForeignKey(e => e.AnalystId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }   
 }

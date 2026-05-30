@@ -229,7 +229,8 @@ namespace CreditApp.Infrastructure.Migrations
                 {
                     b.HasOne("CreditApp.Domain.Entities.User", "AssignedAnalyst")
                         .WithMany()
-                        .HasForeignKey("AssignedAnalystId");
+                        .HasForeignKey("AssignedAnalystId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("CreditApp.Domain.Entities.Client", "Client")
                         .WithMany("CreditRequests")
@@ -247,7 +248,7 @@ namespace CreditApp.Infrastructure.Migrations
                     b.HasOne("CreditApp.Domain.Entities.User", "Analyst")
                         .WithMany()
                         .HasForeignKey("AnalystId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("CreditApp.Domain.Entities.CreditRequest", "CreditRequest")
