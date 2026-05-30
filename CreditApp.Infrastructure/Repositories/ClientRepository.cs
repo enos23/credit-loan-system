@@ -31,9 +31,27 @@ public class ClientRepository : IClientRepository
             .FirstOrDefaultAsync(c => c.CNP == cnp);
     }
 
-    public async Task<IEnumerable<Client>> GetAllAsync()
+    public async Task<(IReadOnlyList<Client> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search)
     {
-        return await _context.Clients.ToListAsync();
+        var query = _context.Clients.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(c =>
+                EF.Functions.ILike(c.FirstName, pattern) ||
+                EF.Functions.ILike(c.LastName, pattern) ||
+                EF.Functions.ILike(c.Email, pattern) ||
+                EF.Functions.ILike(c.CNP, pattern));
+        }
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
     }
 
     public async Task AddAsync(Client client)

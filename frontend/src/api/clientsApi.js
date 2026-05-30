@@ -1,6 +1,8 @@
 import api from './axiosConfig';
 
-export const getAllClients = () => api.get('/Clients');
+// `params` is { page, pageSize, search }. Axios serializes it as a query string.
+// Response shape: { items, page, pageSize, totalCount, totalPages }.
+export const getAllClients = (params = {}) => api.get('/Clients', { params });
 export const getClientById = (id) => api.get(`/Clients/${id}`);
 export const getClientByCNP = (cnp) => api.get(`/Clients/cnp/${cnp}`);
 export const createClient = (data) => api.post('/Clients', data);

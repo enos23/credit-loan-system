@@ -29,13 +29,27 @@ public class CreditRequestRepository : ICreditRequestRepository
             .FirstOrDefaultAsync(cr => cr.Id == id);
     }
 
-    public async Task<IEnumerable<CreditRequest>> GetAllAsync()
+    public async Task<(IReadOnlyList<CreditRequest> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search)
     {
-        return await _context.CreditRequests
+        var query = _context.CreditRequests.AsNoTracking()
             .Include(cr => cr.Client)
-            .Include(cr => cr.AssignedAnalyst)
+            .Include(cr => cr.AssignedAnalyst);
+
+        var filtered = string.IsNullOrWhiteSpace(search)
+            ? query
+            : query.Where(cr =>
+                EF.Functions.ILike(cr.Client.FirstName, $"%{search.Trim()}%") ||
+                EF.Functions.ILike(cr.Client.LastName, $"%{search.Trim()}%") ||
+                EF.Functions.ILike(cr.Purpose, $"%{search.Trim()}%"));
+
+        var totalCount = await filtered.CountAsync();
+        var items = await filtered
             .OrderByDescending(cr => cr.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return (items, totalCount);
     }
 
     public async Task<IEnumerable<CreditRequest>> GetByClientIdAsync(Guid clientId)

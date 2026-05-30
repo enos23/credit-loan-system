@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using CreditApp.Application.DTOs.CreditRequest;
+using CreditApp.Application.Pagination;
 using CreditApp.Application.Services.Interfaces;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
@@ -34,10 +35,16 @@ public class CreditRequestService : ICreditRequestService
         return creditRequest == null ? null : MapToDto(creditRequest);
     }
 
-    public async Task<IEnumerable<CreditRequestDto>> GetAllAsync()
+    public async Task<PagedResult<CreditRequestDto>> GetPagedAsync(PageRequest request)
     {
-        var creditRequests = await _creditRequestRepository.GetAllAsync();
-        return creditRequests.Select(MapToDto);
+        var (items, totalCount) = await _creditRequestRepository.GetPagedAsync(request.Page, request.PageSize, request.Search);
+        return new PagedResult<CreditRequestDto>
+        {
+            Items = items.Select(MapToDto).ToList(),
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+        };
     }
 
     public async Task<IEnumerable<CreditRequestDto>> GetByClientIdAsync(Guid clientId)

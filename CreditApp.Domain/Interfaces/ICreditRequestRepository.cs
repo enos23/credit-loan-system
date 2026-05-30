@@ -12,7 +12,7 @@ namespace CreditApp.Domain.Interfaces;
 public interface ICreditRequestRepository
 {
     Task<CreditRequest?> GetByIdAsync(Guid id);
-    Task<IEnumerable<CreditRequest>> GetAllAsync();
+    Task<(IReadOnlyList<CreditRequest> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search);
     Task<IEnumerable<CreditRequest>> GetByClientIdAsync(Guid clientId);
     Task AddAsync(CreditRequest creditRequest);
     Task UpdateAsync(CreditRequest creditRequest);

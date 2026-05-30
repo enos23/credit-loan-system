@@ -3,6 +3,10 @@ import { getAllCreditRequests, createCreditRequest } from '../../api/creditReque
 import { getAllClients } from '../../api/clientsApi';
 import { getDecisionsByCreditRequest } from '../../api/decisionsApi';
 import { extractErrorMessage } from '../../api/errors';
+import { useDebounce } from '../../hooks/useDebounce';
+import Pager from '@/components/ui/Pager';
+
+const PAGE_SIZE = 20;
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -215,22 +219,28 @@ const DetailModal = ({ req, onClose }) => {
 
 const CreditRequestsPage = () => {
   const [requests, setRequests] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(1);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [form, setForm] = useState({ clientId: '', amount: '', termMonths: '', purpose: '' });
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(null);
 
-  const fetchData = async () => {
+  const fetchRequests = async () => {
     try {
-      const [reqRes, clientRes] = await Promise.all([
-        getAllCreditRequests(),
-        getAllClients(),
-      ]);
-      setRequests(reqRes.data);
-      setClients(clientRes.data);
+      const res = await getAllCreditRequests({
+        page,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch,
+      });
+      setRequests(res.data.items);
+      setTotalCount(res.data.totalCount);
+      setTotalPages(res.data.totalPages);
     } catch (err) {
       console.error(err);
     } finally {
@@ -238,7 +248,20 @@ const CreditRequestsPage = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  // Client dropdown for the "Cerere nouă" form — needs every client.
+  // TODO #34-phase2: replace with a lookup endpoint that returns id + name only.
+  const fetchClientLookup = async () => {
+    try {
+      const res = await getAllClients({ pageSize: 1000 });
+      setClients(res.data.items);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => { fetchClientLookup(); }, []);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
+  useEffect(() => { fetchRequests(); }, [page, debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -252,24 +275,18 @@ const CreditRequestsPage = () => {
       });
       setOpen(false);
       setForm({ clientId: '', amount: '', termMonths: '', purpose: '' });
-      fetchData();
+      fetchRequests();
     } catch (err) {
       setError(extractErrorMessage(err, 'Eroare la crearea cererii.'));
     }
   };
-
-  const filtered = requests.filter(r =>
-    `${r.clientFullName} ${r.purpose} ${r.status}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
 
   return (
     <div className="space-y-8 font-sans max-w-6xl mx-auto pb-12">
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Cereri de credit</h1>
-          <p className="text-slate-500 font-medium mt-1">{requests.length} cereri înregistrate</p>
+          <p className="text-slate-500 font-medium mt-1">{totalCount} cereri înregistrate</p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
@@ -341,14 +358,15 @@ const CreditRequestsPage = () => {
         <div className="flex items-center justify-center py-20 w-full">
           <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : requests.length === 0 ? (
         <div className="w-full py-20 bg-white/80 backdrop-blur-md border border-white rounded-[2rem] shadow-sm flex flex-col items-center justify-center text-slate-400">
           <FilePlus size={48} strokeWidth={1} className="mb-4 text-slate-300" />
-          <p className="font-medium">{search ? 'Nicio cerere găsită.' : 'Nu există cereri de credit încă.'}</p>
+          <p className="font-medium">{debouncedSearch ? 'Nicio cerere găsită.' : 'Nu există cereri de credit încă.'}</p>
         </div>
       ) : (
+        <>
         <div className="space-y-4">
-          {filtered.map(req => (
+          {requests.map(req => (
             <div
               key={req.id}
               onClick={() => setSelected(req)}
@@ -396,6 +414,14 @@ const CreditRequestsPage = () => {
             </div>
           ))}
         </div>
+        <Pager
+          page={page}
+          pageSize={PAGE_SIZE}
+          totalCount={totalCount}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+        </>
       )}
 
       {selected && <DetailModal req={selected} onClose={() => setSelected(null)} />}

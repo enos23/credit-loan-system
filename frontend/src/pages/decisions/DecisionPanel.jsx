@@ -60,8 +60,10 @@ const DecisionPanel = () => {
 
     const fetchRequests = async () => {
         try {
-            const res = await getAllCreditRequests();
-            setRequests(res.data);
+            // TODO #34-phase2: replace with an aggregate endpoint or status-filtered queries.
+            // For now we pull up to 1000 requests and split them client-side.
+            const res = await getAllCreditRequests({ pageSize: 1000 });
+            setRequests(res.data.items);
         } catch (err) {
             console.error(err);
         } finally {

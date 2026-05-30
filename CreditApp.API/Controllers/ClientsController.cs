@@ -1,4 +1,5 @@
 ﻿using CreditApp.Application.DTOs.Client;
+using CreditApp.Application.Pagination;
 using CreditApp.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,9 +20,9 @@ public class ClientsController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin,Analyst,Banker")]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] PageRequest request)
     {
-        var clients = await _clientService.GetAllAsync();
+        var clients = await _clientService.GetPagedAsync(request);
         return Ok(clients);
     }
 

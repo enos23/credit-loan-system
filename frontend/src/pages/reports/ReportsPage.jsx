@@ -58,8 +58,11 @@ const ReportsPage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([getAllCreditRequests(), getDashboard()])
-            .then(([rr, dr]) => { setRequests(rr.data); setDashboard(dr.data); })
+        // TODO #34-phase2: ReportsPage computes aggregates client-side from the full list.
+        // The right fix is an IReportsQueries layer analog to IDashboardQueries.
+        // Until then we pull up to 1000 requests.
+        Promise.all([getAllCreditRequests({ pageSize: 1000 }), getDashboard()])
+            .then(([rr, dr]) => { setRequests(rr.data.items); setDashboard(dr.data); })
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);

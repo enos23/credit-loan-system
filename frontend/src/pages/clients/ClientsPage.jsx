@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { getAllClients, createClient, updateClient, deleteClient } from '../../api/clientsApi';
 import { extractErrorMessage } from '../../api/errors';
+import { useDebounce } from '../../hooks/useDebounce';
+import Pager from '@/components/ui/Pager';
+
+const PAGE_SIZE = 20;
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,6 +97,9 @@ const ClientForm = ({ form, setForm, onSubmit, onCancel, error, isEdit }) => (
 
 const ClientsPage = () => {
   const [clients, setClients] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -102,11 +109,18 @@ const ClientsPage = () => {
   const [error, setError] = useState('');
   const [editError, setEditError] = useState('');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
-  const fetchClients = async () => {
+  const fetchClients = async (opts = {}) => {
     try {
-      const res = await getAllClients();
-      setClients(res.data);
+      const res = await getAllClients({
+        page: opts.page ?? page,
+        pageSize: PAGE_SIZE,
+        search: opts.search ?? debouncedSearch,
+      });
+      setClients(res.data.items);
+      setTotalCount(res.data.totalCount);
+      setTotalPages(res.data.totalPages);
     } catch (err) {
       console.error(err);
     } finally {
@@ -114,7 +128,9 @@ const ClientsPage = () => {
     }
   };
 
-  useEffect(() => { fetchClients(); }, []);
+  // Reset to page 1 when the search term changes; refetch whenever page or search changes.
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
+  useEffect(() => { fetchClients(); }, [page, debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -180,18 +196,12 @@ const ClientsPage = () => {
     }
   };
 
-  const filtered = clients.filter(c =>
-    `${c.firstName} ${c.lastName} ${c.cnp} ${c.email}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Clienți</h1>
-          <p className="text-slate-500">{clients.length} clienți înregistrați</p>
+          <p className="text-slate-500">{totalCount} clienți înregistrați</p>
         </div>
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -242,15 +252,15 @@ const ClientsPage = () => {
 
       {loading ? (
         <p className="text-slate-500">Se încarcă...</p>
-      ) : filtered.length === 0 ? (
+      ) : clients.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-slate-400">
-            {search ? 'Niciun client găsit.' : 'Nu există clienți înregistrați încă.'}
+            {debouncedSearch ? 'Niciun client găsit.' : 'Nu există clienți înregistrați încă.'}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filtered.map(client => (
+          {clients.map(client => (
             <Card key={client.id}>
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
@@ -289,6 +299,14 @@ const ClientsPage = () => {
           ))}
         </div>
       )}
+
+      <Pager
+        page={page}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
     </div>
   );
 };
