@@ -41,7 +41,15 @@ if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Default
         "ConnectionStrings:DefaultConnection is not configured. Set it via `dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<value>\"` " +
         "or the ConnectionStrings__DefaultConnection environment variable.");
 
+var anthropicSection = builder.Configuration.GetSection("Anthropic");
+var anthropicSettings = anthropicSection.Get<AnthropicSettings>() ?? new AnthropicSettings();
+if (string.IsNullOrWhiteSpace(anthropicSettings.ApiKey))
+    throw new InvalidOperationException(
+        "Anthropic:ApiKey is not configured. Set it via `dotnet user-secrets set \"Anthropic:ApiKey\" \"<value>\"` " +
+        "or the Anthropic__ApiKey environment variable.");
+
 builder.Services.Configure<JwtSettings>(jwtSection);
+builder.Services.Configure<AnthropicSettings>(anthropicSection);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -100,6 +108,18 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 5,
                 Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Chat budget per user (from JWT claim, not IP — multiple users on the same NAT
+    // shouldn't share the limit). 20 messages per 5 min covers normal browsing easily.
+    options.AddPolicy("chat", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(5),
                 QueueLimit = 0
             }));
 });

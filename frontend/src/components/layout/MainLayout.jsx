@@ -1,4 +1,5 @@
 import Sidebar from './Sidebar';
+import ChatLauncher from '../chat/ChatLauncher';
 
 const MainLayout = ({ children }) => {
     return (
@@ -7,6 +8,7 @@ const MainLayout = ({ children }) => {
             <main className="flex-1 ml-64 p-8 pt-6 relative">
                 {children}
             </main>
+            <ChatLauncher />
         </div>
     );
 };
