@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { getAllClients, createClient, updateClient, deleteClient } from '../../api/clientsApi';
 import { extractErrorMessage } from '../../api/errors';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useAuth } from '../../context/AuthContext';
 import Pager from '@/components/ui/Pager';
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,6 +97,9 @@ const ClientForm = ({ form, setForm, onSubmit, onCancel, error, isEdit }) => (
 );
 
 const ClientsPage = () => {
+  const { preferences } = useAuth();
+  const pageSize = preferences?.itemsPerPage || DEFAULT_PAGE_SIZE;
+
   const [clients, setClients] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -115,7 +119,7 @@ const ClientsPage = () => {
     try {
       const res = await getAllClients({
         page: opts.page ?? page,
-        pageSize: PAGE_SIZE,
+        pageSize,
         search: opts.search ?? debouncedSearch,
       });
       setClients(res.data.items);
@@ -128,9 +132,9 @@ const ClientsPage = () => {
     }
   };
 
-  // Reset to page 1 when the search term changes; refetch whenever page or search changes.
-  useEffect(() => { setPage(1); }, [debouncedSearch]);
-  useEffect(() => { fetchClients(); }, [page, debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Reset to page 1 when the search term or page size changes.
+  useEffect(() => { setPage(1); }, [debouncedSearch, pageSize]);
+  useEffect(() => { fetchClients(); }, [page, debouncedSearch, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -302,7 +306,7 @@ const ClientsPage = () => {
 
       <Pager
         page={page}
-        pageSize={PAGE_SIZE}
+        pageSize={pageSize}
         totalCount={totalCount}
         totalPages={totalPages}
         onPageChange={setPage}

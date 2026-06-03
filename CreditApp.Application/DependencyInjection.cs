@@ -18,6 +18,8 @@ public static class DependencyInjection
         services.AddScoped<IScoringService, ScoringService>();
         services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IReportsService, ReportsService>();
+        services.AddScoped<IUserPreferenceService, UserPreferenceService>();
         services.AddScoped<ITransactionService, TransactionService>();
 
         // Chat tools. The ChatService injects IEnumerable<IChatTool> and filters by user role.

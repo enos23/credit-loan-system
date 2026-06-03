@@ -225,6 +225,59 @@ namespace CreditApp.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("CreditApp.Domain.Entities.UserPreference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DateFormat")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("ItemsPerPage")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<bool>("NotifyBrowserAlerts")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("NotifyEmailDecision")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("NotifyEmailNewRequest")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("NotifyWeeklyReport")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserPreferences");
+                });
+
             modelBuilder.Entity("CreditApp.Domain.Entities.CreditRequest", b =>
                 {
                     b.HasOne("CreditApp.Domain.Entities.User", "AssignedAnalyst")
@@ -260,6 +313,17 @@ namespace CreditApp.Infrastructure.Migrations
                     b.Navigation("Analyst");
 
                     b.Navigation("CreditRequest");
+                });
+
+            modelBuilder.Entity("CreditApp.Domain.Entities.UserPreference", b =>
+                {
+                    b.HasOne("CreditApp.Domain.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("CreditApp.Domain.Entities.UserPreference", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CreditApp.Domain.Entities.Client", b =>

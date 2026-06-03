@@ -31,8 +31,10 @@ public static class DependencyInjection
         services.AddScoped<ICreditRequestRepository, CreditRequestRepository>();
         services.AddScoped<IDecisionRepository, DecisionRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
 
         services.AddScoped<IDashboardQueries, DashboardQueries>();
+        services.AddScoped<IReportsQueries, ReportsQueries>();
 
         // Anthropic API client. The HttpClient is configured once at registration
         // so callers don't have to set headers/base address on each request.

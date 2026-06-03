@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { Bell, Globe, Layout, Save, CheckCircle, Moon, Sun, Monitor } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Bell, Globe, Layout, Save, CheckCircle, Moon, Sun, Monitor, AlertCircle } from 'lucide-react';
+import { getPreferences, updatePreferences } from '../../api/userPreferencesApi';
+import { extractErrorMessage } from '../../api/errors';
+import { useAuth } from '../../context/AuthContext';
 
 const Toggle = ({ checked, onChange }) => (
     <button
@@ -13,22 +16,48 @@ const Toggle = ({ checked, onChange }) => (
     </button>
 );
 
-const SettingsPage = () => {
-    const [notif, setNotif] = useState({
-        emailNew: true,
-        emailDecision: true,
-        browserAlerts: false,
-        weeklyReport: true,
-    });
-    const [language, setLanguage] = useState('ro');
-    const [dateFormat, setDateFormat] = useState('dd/mm/yyyy');
-    const [itemsPerPage, setItemsPerPage] = useState('10');
-    const [theme, setTheme] = useState('light');
-    const [saved, setSaved] = useState(false);
+const DEFAULT_PREFS = {
+    notifyEmailNewRequest: true,
+    notifyEmailDecision: true,
+    notifyBrowserAlerts: false,
+    notifyWeeklyReport: true,
+    language: 'ro',
+    dateFormat: 'dd/mm/yyyy',
+    itemsPerPage: 10,
+    theme: 'light',
+};
 
-    const handleSave = () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+const SettingsPage = () => {
+    const { updatePreferencesInContext } = useAuth();
+    const [prefs, setPrefs] = useState(DEFAULT_PREFS);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        getPreferences()
+            .then(res => setPrefs(res.data))
+            .catch(err => setError(extractErrorMessage(err, 'Nu am putut încărca preferințele.')))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const setField = (field, value) => setPrefs(p => ({ ...p, [field]: value }));
+
+    const handleSave = async () => {
+        setSaving(true);
+        setError('');
+        try {
+            const res = await updatePreferences(prefs);
+            setPrefs(res.data);
+            updatePreferencesInContext?.(res.data);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Nu am putut salva preferințele.'));
+        } finally {
+            setSaving(false);
+        }
     };
 
     const Section = ({ title, children }) => (
@@ -45,6 +74,12 @@ const SettingsPage = () => {
                 {description && <p className="text-xs text-slate-400 mt-0.5">{description}</p>}
             </div>
             {children}
+        </div>
+    );
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-64">
+            <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
         </div>
     );
 
@@ -67,17 +102,17 @@ const SettingsPage = () => {
             <div className="fade-in" style={{ animationDelay: '60ms', opacity: 0 }}>
                 <Section title={<span className="flex items-center gap-2"><Bell size={16} className="text-blue-500" /> Notificări</span>}>
                     <div className="divide-y divide-slate-100">
-                        <Row label="Cerere nouă" description="Primești email când apare o cerere de credit">
-                            <Toggle checked={notif.emailNew} onChange={v => setNotif({ ...notif, emailNew: v })} />
+                        <Row label="Cerere nouă" description="Primești email când apare o cerere de credit (se va activa la integrarea email-ului)">
+                            <Toggle checked={prefs.notifyEmailNewRequest} onChange={v => setField('notifyEmailNewRequest', v)} />
                         </Row>
                         <Row label="Decizie luată" description="Notificare la fiecare aprobare sau respingere">
-                            <Toggle checked={notif.emailDecision} onChange={v => setNotif({ ...notif, emailDecision: v })} />
+                            <Toggle checked={prefs.notifyEmailDecision} onChange={v => setField('notifyEmailDecision', v)} />
                         </Row>
                         <Row label="Alerte browser" description="Notificări push în timp real">
-                            <Toggle checked={notif.browserAlerts} onChange={v => setNotif({ ...notif, browserAlerts: v })} />
+                            <Toggle checked={prefs.notifyBrowserAlerts} onChange={v => setField('notifyBrowserAlerts', v)} />
                         </Row>
                         <Row label="Raport săptămânal" description="Rezumat de activitate în fiecare luni">
-                            <Toggle checked={notif.weeklyReport} onChange={v => setNotif({ ...notif, weeklyReport: v })} />
+                            <Toggle checked={prefs.notifyWeeklyReport} onChange={v => setField('notifyWeeklyReport', v)} />
                         </Row>
                     </div>
                 </Section>
@@ -90,19 +125,20 @@ const SettingsPage = () => {
                         <div>
                             <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Limbă</label>
                             <select
-                                value={language}
-                                onChange={e => setLanguage(e.target.value)}
+                                value={prefs.language}
+                                onChange={e => setField('language', e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
                             >
                                 <option value="ro">Română</option>
                                 <option value="en">English</option>
                             </select>
+                            <p className="text-[11px] text-slate-400 mt-1">Persistă în profil. Limba UI-ului se va schimba odată cu integrarea i18n.</p>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Format Dată</label>
                             <select
-                                value={dateFormat}
-                                onChange={e => setDateFormat(e.target.value)}
+                                value={prefs.dateFormat}
+                                onChange={e => setField('dateFormat', e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
                             >
                                 <option value="dd/mm/yyyy">DD/MM/YYYY</option>
@@ -120,12 +156,13 @@ const SettingsPage = () => {
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Înregistrări per pagină</label>
                         <select
-                            value={itemsPerPage}
-                            onChange={e => setItemsPerPage(e.target.value)}
+                            value={prefs.itemsPerPage}
+                            onChange={e => setField('itemsPerPage', parseInt(e.target.value))}
                             className="w-full sm:w-40 px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
                         >
-                            {['5', '10', '25', '50'].map(n => <option key={n} value={n}>{n} rânduri</option>)}
+                            {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} rânduri</option>)}
                         </select>
+                        <p className="text-[11px] text-slate-400 mt-1">Aplică la listele de clienți și cereri de credit.</p>
                     </div>
 
                     <div>
@@ -139,20 +176,26 @@ const SettingsPage = () => {
                                 <button
                                     key={value}
                                     type="button"
-                                    onClick={() => setTheme(value)}
-                                    className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl border-2 text-xs font-semibold transition-all ${theme === value ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                                    onClick={() => setField('theme', value)}
+                                    className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl border-2 text-xs font-semibold transition-all ${prefs.theme === value ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
                                 >
                                     <Icon size={18} />
                                     {label}
                                 </button>
                             ))}
                         </div>
+                        <p className="text-[11px] text-slate-400 mt-2">Persistă în profil. Modul dark/system se va activa la implementarea suportului de teme.</p>
                     </div>
                 </Section>
             </div>
 
             {/* Save */}
             <div className="flex justify-end items-center gap-4 fade-in" style={{ animationDelay: '240ms', opacity: 0 }}>
+                {error && (
+                    <span className="flex items-center gap-1.5 text-sm text-red-500 font-semibold">
+                        <AlertCircle size={16} /> {error}
+                    </span>
+                )}
                 {saved && (
                     <span className="flex items-center gap-1.5 text-sm text-emerald-600 font-semibold">
                         <CheckCircle size={16} /> Setările au fost salvate
@@ -160,9 +203,10 @@ const SettingsPage = () => {
                 )}
                 <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
                 >
-                    <Save size={15} /> Salvează
+                    <Save size={15} /> {saving ? 'Se salvează...' : 'Salvează'}
                 </button>
             </div>
         </div>

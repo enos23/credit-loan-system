@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
     public DbSet<Client> Clients { get; set; }
     public DbSet<CreditRequest> CreditRequests { get; set; }
     public DbSet<Decision> Decisions { get; set; }
+    public DbSet<UserPreference> UserPreferences { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -64,6 +65,20 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.AssignedAnalystId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        //UserPreference
+        modelBuilder.Entity<UserPreference>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.Property(e => e.Language).HasMaxLength(8);
+            entity.Property(e => e.DateFormat).HasMaxLength(20);
+            entity.Property(e => e.Theme).HasMaxLength(20);
+            entity.HasOne(e => e.User)
+                  .WithOne()
+                  .HasForeignKey<UserPreference>(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         //Decision

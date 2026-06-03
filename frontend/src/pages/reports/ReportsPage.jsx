@@ -1,6 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { getAllCreditRequests } from '../../api/creditRequestsApi';
-import { getDashboard } from '../../api/dashboardApi';
+import { useEffect, useState } from 'react';
+import { getReports } from '../../api/reportsApi';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend, CartesianGrid,
@@ -10,20 +9,9 @@ import {
     TrendingUp, Star, AlertTriangle, BarChart2,
 } from 'lucide-react';
 
-const STATUS_PIE_COLORS = ['#6366f1', '#f87171', '#fbbf24', '#94a3b8'];
+const STATUS_PIE_COLORS = ['#6366f1', '#f87171', '#fbbf24'];
 const RISK_COLORS = { Low: '#10b981', Medium: '#f59e0b', High: '#ef4444' };
 const RISK_LABELS = { Low: 'Scăzut', Medium: 'Mediu', High: 'Ridicat' };
-
-const STATUS_LABELS = {
-    Approved: 'Aprobat', Rejected: 'Respins',
-    Pending: 'În așteptare', UnderReview: 'În analiză',
-};
-const STATUS_STYLES = {
-    Approved: 'bg-emerald-50 text-emerald-700',
-    Rejected: 'bg-red-50 text-red-600',
-    Pending: 'bg-amber-50 text-amber-600',
-    UnderReview: 'bg-blue-50 text-blue-600',
-};
 
 const StatCard = ({ label, value, icon: Icon, color, bg }) => (
     <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
@@ -53,58 +41,32 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const ReportsPage = () => {
-    const [requests, setRequests] = useState([]);
-    const [dashboard, setDashboard] = useState(null);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // TODO #34-phase2: ReportsPage computes aggregates client-side from the full list.
-        // The right fix is an IReportsQueries layer analog to IDashboardQueries.
-        // Until then we pull up to 1000 requests.
-        Promise.all([getAllCreditRequests({ pageSize: 1000 }), getDashboard()])
-            .then(([rr, dr]) => { setRequests(rr.data.items); setDashboard(dr.data); })
+        getReports()
+            .then(res => setData(res.data))
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
-
-    const approved = requests.filter(r => r.status === 'Approved').length;
-    const rejected = requests.filter(r => r.status === 'Rejected').length;
-    const pending = requests.filter(r => r.status === 'Pending' || r.status === 'UnderReview').length;
-    const totalAmount = requests.reduce((s, r) => s + (r.amount || 0), 0);
-    const approvedAmount = requests.filter(r => r.status === 'Approved').reduce((s, r) => s + (r.amount || 0), 0);
-    const avgScore = requests.length > 0 ? Math.round(requests.reduce((s, r) => s + (r.creditScore || 0), 0) / requests.length) : 0;
-    const avgAmount = requests.length > 0 ? Math.round(requests.reduce((s, r) => s + (r.amount || 0), 0) / requests.length) : 0;
-    const approvalRate = requests.length > 0 ? Math.round(approved / requests.length * 100) : 0;
-
-    // Pie chart data
-    const pieData = [
-        { name: 'Aprobate', value: approved },
-        { name: 'Respinse', value: rejected },
-        { name: 'În așteptare', value: pending },
-    ].filter(d => d.value > 0);
-
-    // Bar chart by purpose
-    const purposeMap = {};
-    requests.forEach(r => { const k = r.purpose || 'Altele'; purposeMap[k] = (purposeMap[k] || 0) + 1; });
-    const barData = Object.entries(purposeMap).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
-
-    // Analyst performance
-    const analystMap = {};
-    requests.forEach(r => {
-        if (!r.assignedAnalystName) return;
-        const k = r.assignedAnalystName;
-        if (!analystMap[k]) analystMap[k] = { name: k, total: 0, approved: 0, rejected: 0 };
-        analystMap[k].total++;
-        if (r.status === 'Approved') analystMap[k].approved++;
-        if (r.status === 'Rejected') analystMap[k].rejected++;
-    });
-    const analysts = Object.values(analystMap).sort((a, b) => b.total - a.total);
 
     if (loading) return (
         <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
         </div>
     );
+
+    if (!data) return null;
+
+    // Build pie chart input from the 3 status counts the API already gives us.
+    const pieData = [
+        { name: 'Aprobate', value: data.approvedCount },
+        { name: 'Respinse', value: data.rejectedCount },
+        { name: 'În așteptare', value: data.pendingCount },
+    ].filter(d => d.value > 0);
+
+    const totalRiskCount = (data.riskDistribution || []).reduce((s, r) => s + r.count, 0) || 1;
 
     return (
         <>
@@ -140,40 +102,41 @@ const ReportsPage = () => {
 
                     {/* KPI grid */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <StatCard label="Total Cereri" value={requests.length} icon={FileText} color="text-indigo-600" bg="bg-indigo-50" />
-                        <StatCard label="Aprobate" value={approved} icon={CheckCircle} color="text-emerald-600" bg="bg-emerald-50" />
-                        <StatCard label="Respinse" value={rejected} icon={XCircle} color="text-red-600" bg="bg-red-50" />
-                        <StatCard label="În așteptare" value={pending} icon={Clock} color="text-amber-600" bg="bg-amber-50" />
-                        <StatCard label="Rată aprobare" value={`${approvalRate}%`} icon={TrendingUp} color="text-violet-600" bg="bg-violet-50" />
-                        <StatCard label="Scor mediu" value={avgScore} icon={Star} color="text-blue-600" bg="bg-blue-50" />
+                        <StatCard label="Total Cereri" value={data.totalRequests} icon={FileText} color="text-indigo-600" bg="bg-indigo-50" />
+                        <StatCard label="Aprobate" value={data.approvedCount} icon={CheckCircle} color="text-emerald-600" bg="bg-emerald-50" />
+                        <StatCard label="Respinse" value={data.rejectedCount} icon={XCircle} color="text-red-600" bg="bg-red-50" />
+                        <StatCard label="În așteptare" value={data.pendingCount} icon={Clock} color="text-amber-600" bg="bg-amber-50" />
+                        <StatCard label="Rată aprobare" value={`${data.approvalRate}%`} icon={TrendingUp} color="text-violet-600" bg="bg-violet-50" />
+                        <StatCard label="Scor mediu" value={data.averageCreditScore} icon={Star} color="text-blue-600" bg="bg-blue-50" />
                     </div>
 
                     {/* Amount summary */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 rounded-2xl text-white shadow-lg">
                             <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wide mb-2">Valoare totală cereri</p>
-                            <p className="text-2xl font-extrabold">{totalAmount.toLocaleString('ro-RO')} RON</p>
+                            <p className="text-2xl font-extrabold">{data.totalAmount.toLocaleString('ro-RO')} RON</p>
                         </div>
                         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-2xl text-white shadow-lg">
                             <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wide mb-2">Valoare aprobată</p>
-                            <p className="text-2xl font-extrabold">{approvedAmount.toLocaleString('ro-RO')} RON</p>
+                            <p className="text-2xl font-extrabold">{data.approvedAmount.toLocaleString('ro-RO')} RON</p>
                         </div>
                         <div className="bg-gradient-to-br from-violet-500 to-purple-700 p-6 rounded-2xl text-white shadow-lg">
                             <p className="text-violet-200 text-xs font-semibold uppercase tracking-wide mb-2">Sumă medie cerere</p>
-                            <p className="text-2xl font-extrabold">{avgAmount.toLocaleString('ro-RO')} RON</p>
+                            <p className="text-2xl font-extrabold">{data.averageAmount.toLocaleString('ro-RO')} RON</p>
                         </div>
                     </div>
 
-                    {/* Charts row */}
+                    {/* Charts row 1 */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Monthly bar chart */}
                         <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <BarChart2 size={18} className="text-indigo-500" /> Activitate lunară
                             </h3>
-                            {dashboard?.monthlyStats ? (
+                            {data.monthlyStats?.every(m => m.total === 0) ? (
+                                <p className="text-slate-400 text-sm text-center py-16">Nu există date</p>
+                            ) : (
                                 <ResponsiveContainer width="100%" height={220}>
-                                    <BarChart data={dashboard.monthlyStats} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={3}>
+                                    <BarChart data={data.monthlyStats} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={3}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                                         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} dy={6} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
@@ -184,10 +147,9 @@ const ReportsPage = () => {
                                         <Bar dataKey="rejected" name="Respinse" fill="#f87171" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
-                            ) : <p className="text-slate-400 text-sm text-center py-16">Nu există date</p>}
+                            )}
                         </div>
 
-                        {/* Pie chart */}
                         <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
                             <h3 className="font-bold text-slate-800 text-base mb-5">Distribuție status</h3>
                             {pieData.length === 0 ? (
@@ -206,14 +168,15 @@ const ReportsPage = () => {
                         </div>
                     </div>
 
-                    {/* Second charts row */}
+                    {/* Charts row 2 */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Bar by purpose */}
                         <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
                             <h3 className="font-bold text-slate-800 text-base mb-5">Cereri după scop</h3>
-                            {barData.length === 0 ? <p className="text-slate-400 text-sm text-center py-12">Nu există cereri</p> : (
+                            {(data.byPurpose || []).length === 0 ? (
+                                <p className="text-slate-400 text-sm text-center py-12">Nu există cereri</p>
+                            ) : (
                                 <ResponsiveContainer width="100%" height={200}>
-                                    <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
+                                    <BarChart data={data.byPurpose} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
                                         <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
                                         <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} width={120} />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
@@ -223,19 +186,17 @@ const ReportsPage = () => {
                             )}
                         </div>
 
-                        {/* Risk distribution */}
                         <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <AlertTriangle size={17} className="text-amber-500" /> Distribuție risc
                             </h3>
-                            {(dashboard?.riskDistribution || []).every(r => r.count === 0) ? (
+                            {(data.riskDistribution || []).every(r => r.count === 0) ? (
                                 <p className="text-slate-400 text-sm text-center py-12">Nu există date</p>
                             ) : (
                                 <div className="space-y-5 mt-2">
-                                    {(dashboard?.riskDistribution || []).map(r => {
+                                    {data.riskDistribution.map(r => {
                                         const color = RISK_COLORS[r.level] || '#94a3b8';
-                                        const total = (dashboard?.riskDistribution || []).reduce((s, x) => s + x.count, 0) || 1;
-                                        const pct = Math.round(r.count / total * 100);
+                                        const pct = Math.round(r.count / totalRiskCount * 100);
                                         return (
                                             <div key={r.level}>
                                                 <div className="flex justify-between mb-1.5 text-sm">
@@ -254,7 +215,7 @@ const ReportsPage = () => {
                     </div>
 
                     {/* Analyst performance */}
-                    {analysts.length > 0 && (
+                    {(data.analystPerformance || []).length > 0 && (
                         <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <Users size={17} className="text-indigo-500" /> Performanță analiști
@@ -268,66 +229,37 @@ const ReportsPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {analysts.map(a => (
-                                        <tr key={a.name} className="hover:bg-slate-50/60 transition-colors">
-                                            <td className="py-3.5 font-semibold text-slate-800">{a.name}</td>
-                                            <td className="py-3.5 text-slate-600">{a.total}</td>
-                                            <td className="py-3.5">
-                                                <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
-                                                    <CheckCircle size={13} /> {a.approved}
-                                                </span>
-                                            </td>
-                                            <td className="py-3.5">
-                                                <span className="inline-flex items-center gap-1 text-red-500 font-semibold">
-                                                    <XCircle size={13} /> {a.rejected}
-                                                </span>
-                                            </td>
-                                            <td className="py-3.5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-2 w-24 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${a.total > 0 ? Math.round(a.approved / a.total * 100) : 0}%` }} />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-slate-700">
-                                                        {a.total > 0 ? Math.round(a.approved / a.total * 100) : 0}%
+                                    {data.analystPerformance.map(a => {
+                                        const rate = a.total > 0 ? Math.round(a.approved / a.total * 100) : 0;
+                                        return (
+                                            <tr key={a.name} className="hover:bg-slate-50/60 transition-colors">
+                                                <td className="py-3.5 font-semibold text-slate-800">{a.name}</td>
+                                                <td className="py-3.5 text-slate-600">{a.total}</td>
+                                                <td className="py-3.5">
+                                                    <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                                                        <CheckCircle size={13} /> {a.approved}
                                                     </span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td className="py-3.5">
+                                                    <span className="inline-flex items-center gap-1 text-red-500 font-semibold">
+                                                        <XCircle size={13} /> {a.rejected}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-24 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${rate}%` }} />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-slate-700">{rate}%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
                     )}
-
-                    {/* Full request table */}
-                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm overflow-x-auto">
-                        <h3 className="font-bold text-slate-800 text-base mb-5">Toate cererile</h3>
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-100">
-                                    {['Client', 'Scop', 'Sumă (RON)', 'Termen', 'Scor', 'Status'].map(h => (
-                                        <th key={h} className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wide pr-4">{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {requests.map((r, i) => (
-                                    <tr key={i} className="hover:bg-slate-50/60 transition-colors">
-                                        <td className="py-3 font-semibold text-slate-700 pr-4">{r.clientFullName}</td>
-                                        <td className="py-3 text-slate-500 pr-4">{r.purpose}</td>
-                                        <td className="py-3 font-medium text-slate-700 pr-4">{r.amount?.toLocaleString('ro-RO')}</td>
-                                        <td className="py-3 text-slate-500 pr-4">{r.termMonths} luni</td>
-                                        <td className="py-3 font-bold text-slate-700 pr-4">{r.creditScore}</td>
-                                        <td className="py-3">
-                                            <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-500'}`}>
-                                                {STATUS_LABELS[r.status] || r.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </>

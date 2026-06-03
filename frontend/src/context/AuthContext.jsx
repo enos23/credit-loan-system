@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { login as loginApi, updateProfile as updateProfileApi } from "../api/authApi";
+import { getPreferences } from "../api/userPreferencesApi";
 
 const AuthContext = createContext(null);
 
@@ -14,13 +15,21 @@ const parseUser = (data) => ({
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [preferences, setPreferences] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user');
+        const prefsData = localStorage.getItem('preferences');
         if (token && userData) {
             setUser(JSON.parse(userData));
+            if (prefsData) setPreferences(JSON.parse(prefsData));
+            // Refresh preferences from server in the background — handles changes
+            // made on another device or via direct DB edit.
+            getPreferences()
+                .then(res => persistPreferences(res.data))
+                .catch(() => { /* preferences are optional — UI uses defaults if missing */ });
         }
         setLoading(false);
     }, []);
@@ -33,9 +42,18 @@ export const AuthProvider = ({ children }) => {
         return parsed;
     };
 
+    const persistPreferences = (prefs) => {
+        localStorage.setItem('preferences', JSON.stringify(prefs));
+        setPreferences(prefs);
+    };
+
     const login = async (data) => {
         const response = await loginApi(data);
         persistUser(response.data);
+        // Pull preferences for this user; fire-and-forget so login isn't blocked.
+        getPreferences()
+            .then(res => persistPreferences(res.data))
+            .catch(() => { /* defaults will be used */ });
         return response.data;
     };
 
@@ -45,14 +63,20 @@ export const AuthProvider = ({ children }) => {
         return response.data;
     };
 
+    const updatePreferencesInContext = (prefs) => {
+        persistPreferences(prefs);
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('preferences');
         setUser(null);
+        setPreferences(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
+        <AuthContext.Provider value={{ user, preferences, login, logout, updateUser, updatePreferencesInContext, loading }}>
             {children}
         </AuthContext.Provider>
     );

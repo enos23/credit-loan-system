@@ -4,9 +4,10 @@ import { getAllClients } from '../../api/clientsApi';
 import { getDecisionsByCreditRequest } from '../../api/decisionsApi';
 import { extractErrorMessage } from '../../api/errors';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useAuth } from '../../context/AuthContext';
 import Pager from '@/components/ui/Pager';
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -218,6 +219,9 @@ const DetailModal = ({ req, onClose }) => {
 };
 
 const CreditRequestsPage = () => {
+  const { preferences } = useAuth();
+  const pageSize = preferences?.itemsPerPage || DEFAULT_PAGE_SIZE;
+
   const [requests, setRequests] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -235,7 +239,7 @@ const CreditRequestsPage = () => {
     try {
       const res = await getAllCreditRequests({
         page,
-        pageSize: PAGE_SIZE,
+        pageSize,
         search: debouncedSearch,
       });
       setRequests(res.data.items);
@@ -260,8 +264,8 @@ const CreditRequestsPage = () => {
   };
 
   useEffect(() => { fetchClientLookup(); }, []);
-  useEffect(() => { setPage(1); }, [debouncedSearch]);
-  useEffect(() => { fetchRequests(); }, [page, debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1); }, [debouncedSearch, pageSize]);
+  useEffect(() => { fetchRequests(); }, [page, debouncedSearch, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -416,7 +420,7 @@ const CreditRequestsPage = () => {
         </div>
         <Pager
           page={page}
-          pageSize={PAGE_SIZE}
+          pageSize={pageSize}
           totalCount={totalCount}
           totalPages={totalPages}
           onPageChange={setPage}
