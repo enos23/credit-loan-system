@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 
 using CreditApp.Application.Chat;
 using CreditApp.Application.Configuration;
+using CreditApp.Application.Email;
 using CreditApp.Application.Interfaces.Queries;
 using CreditApp.Domain.Interfaces;
 using CreditApp.Infrastructure.Anthropic;
 using CreditApp.Infrastructure.Data;
+using CreditApp.Infrastructure.Email;
 using CreditApp.Infrastructure.Queries;
 using CreditApp.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +37,10 @@ public static class DependencyInjection
 
         services.AddScoped<IDashboardQueries, DashboardQueries>();
         services.AddScoped<IReportsQueries, ReportsQueries>();
+
+        // Singleton: SmtpEmailService holds no state and creates a fresh SmtpClient
+        // per call; safe to share across the app.
+        services.AddSingleton<IEmailService, SmtpEmailService>();
 
         // Anthropic API client. The HttpClient is configured once at registration
         // so callers don't have to set headers/base address on each request.

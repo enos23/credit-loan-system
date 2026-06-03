@@ -10,6 +10,7 @@ using System.Text;
 using BCrypt.Net;
 using CreditApp.Application.Configuration;
 using CreditApp.Application.DTOs.Auth;
+using CreditApp.Application.Email;
 using CreditApp.Application.Services.Interfaces;
 using CreditApp.Application.Validation;
 using CreditApp.Domain.Entities;
@@ -24,11 +25,19 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly JwtSettings _jwtSettings;
+    private readonly IEmailService _emailService;
+    private readonly EmailSettings _emailSettings;
 
-    public AuthService(IUserRepository userRepository, IOptions<JwtSettings> jwtOptions)
+    public AuthService(
+        IUserRepository userRepository,
+        IOptions<JwtSettings> jwtOptions,
+        IEmailService emailService,
+        IOptions<EmailSettings> emailOptions)
     {
         _userRepository = userRepository;
         _jwtSettings = jwtOptions.Value;
+        _emailService = emailService;
+        _emailSettings = emailOptions.Value;
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
@@ -68,6 +77,12 @@ public class AuthService : IAuthService
         user.ResetPasswordToken = token;
         user.ResetPasswordTokenExpiry = DateTime.UtcNow.AddHours(1);
         await _userRepository.UpdateAsync(user);
+
+        _emailService.Enqueue(EmailTemplates.ResetPassword(
+            toEmail: user.Email,
+            toName: $"{user.FirstName} {user.LastName}",
+            resetToken: token,
+            frontendBaseUrl: _emailSettings.FrontendBaseUrl));
 
         return token;
     }

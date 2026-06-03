@@ -1,4 +1,5 @@
 using CreditApp.Application.DTOs.Decision;
+using CreditApp.Application.Email;
 using CreditApp.Application.Exceptions;
 using CreditApp.Application.Services.Interfaces;
 using CreditApp.Domain.Entities;
@@ -11,13 +12,16 @@ public class DecisionService : IDecisionService
 {
     private readonly IDecisionRepository _decisionRepository;
     private readonly ICreditRequestRepository _creditRequestRepository;
+    private readonly IEmailService _emailService;
 
     public DecisionService(
         IDecisionRepository decisionRepository,
-        ICreditRequestRepository creditRequestRepository)
+        ICreditRequestRepository creditRequestRepository,
+        IEmailService emailService)
     {
         _decisionRepository = decisionRepository;
         _creditRequestRepository = creditRequestRepository;
+        _emailService = emailService;
     }
 
     public async Task<DecisionDto?> GetByIdAsync(Guid id)
@@ -64,6 +68,22 @@ public class DecisionService : IDecisionService
             _ => CreditStatus.Pending,
         };
         await _creditRequestRepository.UpdateAsync(creditRequest);
+
+        // Notify the client when the request reaches a final state. NeedsMoreInfo
+        // is not a final state — we hold off so the client isn't told a half-truth.
+        if (decisionType is DecisionType.Approved or DecisionType.Rejected
+            && creditRequest.Client != null
+            && !string.IsNullOrWhiteSpace(creditRequest.Client.Email))
+        {
+            _emailService.Enqueue(EmailTemplates.DecisionMade(
+                toEmail: creditRequest.Client.Email,
+                toName: $"{creditRequest.Client.FirstName} {creditRequest.Client.LastName}",
+                approved: decisionType == DecisionType.Approved,
+                amount: creditRequest.Amount,
+                approvedAmount: decision.ApprovedAmount,
+                interestRate: decision.InterestRate,
+                termMonths: creditRequest.TermMonths));
+        }
 
         return MapToDto(decision);
     }

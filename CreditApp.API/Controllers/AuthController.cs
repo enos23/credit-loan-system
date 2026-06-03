@@ -14,12 +14,10 @@ namespace CreditApp.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly IWebHostEnvironment _env;
 
-    public AuthController(IAuthService authService, IWebHostEnvironment env)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
-        _env = env;
     }
 
     [HttpPost("login")]
@@ -47,18 +45,15 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
-    // TODO: when email sending is wired up, deliver the token via email and stop returning it here entirely.
     [HttpPost("forgot-password")]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
-        var token = await _authService.ForgotPasswordAsync(dto.Email);
-        const string message = "Dacă adresa există în sistem, veți primi un cod de resetare.";
-
-        if (token != null && _env.IsDevelopment())
-            return Ok(new { token, message });
-
-        return Ok(new { message });
+        // We fire-and-forget the email send inside the service, so this returns
+        // immediately with the same generic message regardless of whether the
+        // address exists. No token ever leaves the server.
+        await _authService.ForgotPasswordAsync(dto.Email);
+        return Ok(new { message = "Dacă adresa există în sistem, veți primi un cod de resetare." });
     }
 
     [HttpPost("reset-password")]

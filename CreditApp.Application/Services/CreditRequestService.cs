@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using CreditApp.Application.Configuration;
 using CreditApp.Application.DTOs.CreditRequest;
+using CreditApp.Application.Email;
 using CreditApp.Application.Pagination;
 using CreditApp.Application.Services.Interfaces;
 using CreditApp.Domain.Entities;
 using CreditApp.Domain.Enums;
 using CreditApp.Domain.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace CreditApp.Application.Services;
 
@@ -18,15 +21,27 @@ public class CreditRequestService : ICreditRequestService
     private readonly ICreditRequestRepository _creditRequestRepository;
     private readonly IClientRepository _clientRepository;
     private readonly IScoringService _scoringService;
+    private readonly IUserRepository _userRepository;
+    private readonly IUserPreferenceRepository _userPreferenceRepository;
+    private readonly IEmailService _emailService;
+    private readonly EmailSettings _emailSettings;
 
     public CreditRequestService(
         ICreditRequestRepository creditRequestRepository,
         IClientRepository clientRepository,
-        IScoringService scoringService)
+        IScoringService scoringService,
+        IUserRepository userRepository,
+        IUserPreferenceRepository userPreferenceRepository,
+        IEmailService emailService,
+        IOptions<EmailSettings> emailOptions)
     {
         _creditRequestRepository = creditRequestRepository;
         _clientRepository = clientRepository;
         _scoringService = scoringService;
+        _userRepository = userRepository;
+        _userPreferenceRepository = userPreferenceRepository;
+        _emailService = emailService;
+        _emailSettings = emailOptions.Value;
     }
 
     public async Task<CreditRequestDto?> GetByIdAsync(Guid id)
@@ -74,7 +89,40 @@ public class CreditRequestService : ICreditRequestService
         };
 
         await _creditRequestRepository.AddAsync(creditRequest);
+
+        await NotifyAnalystsOfNewRequestAsync(creditRequest, client);
+
         return MapToDto(creditRequest);
+    }
+
+    // Broadcast to active analysts + admins whose preferences opt them in.
+    // Default (no UserPreference row yet) = opted in.
+    private async Task NotifyAnalystsOfNewRequestAsync(CreditRequest request, Client client)
+    {
+        var users = await _userRepository.GetAllAsync();
+        var clientFullName = $"{client.FirstName} {client.LastName}";
+        var riskLevelString = request.RiskLevel.ToString();
+
+        foreach (var user in users)
+        {
+            if (!user.IsActive) continue;
+            if (user.Role != UserRole.Analyst && user.Role != UserRole.Admin) continue;
+
+            var pref = await _userPreferenceRepository.GetByUserIdAsync(user.Id);
+            var optedIn = pref?.NotifyEmailNewRequest ?? true;
+            if (!optedIn) continue;
+
+            _emailService.Enqueue(EmailTemplates.NewRequestForAnalyst(
+                toEmail: user.Email,
+                toName: $"{user.FirstName} {user.LastName}",
+                clientFullName: clientFullName,
+                amount: request.Amount,
+                termMonths: request.TermMonths,
+                purpose: request.Purpose,
+                creditScore: request.CreditScore,
+                riskLevel: riskLevelString,
+                frontendBaseUrl: _emailSettings.FrontendBaseUrl));
+        }
     }
 
     public async Task UpdateStatusAsync(Guid id, string status)

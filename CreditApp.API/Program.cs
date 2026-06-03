@@ -50,6 +50,7 @@ if (string.IsNullOrWhiteSpace(anthropicSettings.ApiKey))
 
 builder.Services.Configure<JwtSettings>(jwtSection);
 builder.Services.Configure<AnthropicSettings>(anthropicSection);
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 
 builder.Services.AddAuthentication(options =>
 {
