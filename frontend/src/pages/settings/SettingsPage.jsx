@@ -190,7 +190,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Save */}
-            <div className="flex justify-end items-center gap-4 fade-in" style={{ animationDelay: '240ms', opacity: 0 }}>
+            <div className="flex flex-wrap justify-end items-center gap-4 fade-in" style={{ animationDelay: '240ms', opacity: 0 }}>
                 {error && (
                     <span className="flex items-center gap-1.5 text-sm text-red-500 font-semibold">
                         <AlertCircle size={16} /> {error}

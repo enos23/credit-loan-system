@@ -267,19 +267,19 @@ const ClientsPage = () => {
           {clients.map(client => (
             <Card key={client.id}>
               <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 shrink-0">
                       {client.firstName[0]}{client.lastName[0]}
                     </div>
-                    <div>
-                      <p className="font-medium">{client.firstName} {client.lastName}</p>
-                      <p className="text-sm text-slate-500">{client.email} · CNP: {client.cnp}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{client.firstName} {client.lastName}</p>
+                      <p className="text-sm text-slate-500 truncate">{client.email} · CNP: {client.cnp}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3">
                     <Badge variant="outline">{employmentLabel[client.employmentStatus] || client.employmentStatus}</Badge>
-                    <p className="text-sm text-slate-600">{client.monthlyIncome?.toLocaleString()} RON/lună</p>
+                    <p className="text-sm text-slate-600 whitespace-nowrap">{client.monthlyIncome?.toLocaleString()} RON/lună</p>
                     <Button
                       variant="outline"
                       size="sm"

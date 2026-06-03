@@ -220,7 +220,8 @@ const ReportsPage = () => {
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <Users size={17} className="text-indigo-500" /> Performanță analiști
                             </h3>
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto">
+                            <table className="w-full text-sm min-w-[560px]">
                                 <thead>
                                     <tr className="border-b border-slate-100">
                                         {['Analist', 'Total procesate', 'Aprobate', 'Respinse', 'Rată aprobare'].map(h => (
@@ -258,6 +259,7 @@ const ReportsPage = () => {
                                     })}
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     )}
                 </div>

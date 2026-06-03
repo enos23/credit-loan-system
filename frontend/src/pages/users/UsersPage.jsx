@@ -172,27 +172,27 @@ const UsersPage = () => {
         : emptyForm;
 
     return (
-        <div className="p-8 max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center">
+        <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
                         <Users size={20} className="text-violet-600" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Gestionare Utilizatori</h1>
                         <p className="text-sm text-slate-500 mt-0.5">Creare, editare și gestionare acces</p>
                     </div>
                 </div>
                 <Button
                     onClick={() => { setModalMode('create'); setFormError(''); }}
-                    className="h-10 px-5 rounded-xl bg-[#1c1c1c] hover:bg-black text-white font-medium flex items-center gap-2 shadow-md"
+                    className="h-10 px-5 rounded-xl bg-[#1c1c1c] hover:bg-black text-white font-medium flex items-center gap-2 shadow-md self-start sm:self-auto"
                 >
                     <UserPlus size={17} />
                     Utilizator nou
                 </Button>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
                 {loading ? (
                     <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Se încarcă...</div>
                 ) : users.length === 0 ? (
@@ -201,7 +201,7 @@ const UsersPage = () => {
                         <p className="text-sm">Niciun utilizator găsit.</p>
                     </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm min-w-[640px]">
                         <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/60">
                                 <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide">Utilizator</th>

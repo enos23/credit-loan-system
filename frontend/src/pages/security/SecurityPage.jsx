@@ -168,20 +168,20 @@ const SecurityPage = () => {
 
                 <div className="space-y-3">
                     {SESSIONS.map((s, i) => (
-                        <div key={i} className={`flex items-center justify-between p-4 rounded-2xl ${s.current ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50'}`}>
-                            <div className="flex items-center gap-3">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.current ? 'bg-blue-100 text-blue-500' : 'bg-slate-200 text-slate-500'}`}>
+                        <div key={i} className={`flex items-center justify-between gap-3 p-4 rounded-2xl ${s.current ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50'}`}>
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.current ? 'bg-blue-100 text-blue-500' : 'bg-slate-200 text-slate-500'}`}>
                                     <s.Icon size={17} />
                                 </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-800">{s.device}</p>
-                                    <p className="text-xs text-slate-400">{s.location} · {s.time}</p>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-slate-800 truncate">{s.device}</p>
+                                    <p className="text-xs text-slate-400 truncate">{s.location} · {s.time}</p>
                                 </div>
                             </div>
                             {s.current
-                                ? <span className="text-[10px] font-bold uppercase tracking-wide bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full">Curentă</span>
+                                ? <span className="text-[10px] font-bold uppercase tracking-wide bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full shrink-0">Curentă</span>
                                 : (
-                                    <button className="text-xs font-semibold text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors">
+                                    <button className="text-xs font-semibold text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors shrink-0">
                                         <LogOut size={13} /> Deconectează
                                     </button>
                                 )
