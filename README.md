@@ -229,10 +229,6 @@ credit-loan-system/
 - [`docs/diagrams/`](./docs/diagrams/) — Diagrame UML și ER
 - [`postman/`](./postman/) — Postman collection pentru API
 
-## Lucrarea de licență
-
-Această aplicație constituie partea practică a lucrării de licență cu titlul *Aplicație web pentru gestionarea cererilor de credit bancar cu integrare AI*, susținută în iunie 2026, sub coordonarea **[Nume coordonator]**, [Universitatea].
-
 ## License
 
 Acest proiect este destinat exclusiv evaluării academice și demonstrației portofoliului personal.
