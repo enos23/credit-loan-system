@@ -1,0 +1,124 @@
+@startuml
+' CreditWise — Sequence Diagram
+' Flow critic: Creare cerere credit → scoring → notificare analiști → decizie → email client
+' Render în https://www.plantuml.com/plantuml → export PNG/SVG
+' Salvează exportul în docs/diagrams/exports/sequence-credit-flow.png
+
+title CreditWise — Flow complet: Cerere → Scoring → Decizie → Email
+
+skinparam sequenceArrowThickness 1.5
+skinparam noteBackgroundColor #fef3c7
+skinparam noteBorderColor #f59e0b
+skinparam sequenceParticipantBackgroundColor #eef2ff
+skinparam sequenceParticipantBorderColor #6366f1
+skinparam sequenceActorBackgroundColor #f1f5f9
+skinparam sequenceActorBorderColor #475569
+
+actor "Banker\n(creează cerere)" as banker
+actor "Analyst\n(decide)" as analyst
+actor "Client\n(primește email)" as client
+
+participant "React UI" as ui
+participant "ASP.NET\nMiddleware" as middleware
+participant "CreditRequest\nController" as ctrl_cr
+participant "CreditRequest\nService" as svc_cr
+participant "Scoring\nService" as scoring
+participant "Decision\nController" as ctrl_d
+participant "Decision\nService" as svc_d
+participant "Email\nService" as email
+database "PostgreSQL\n(Supabase)" as db
+queue "SMTP\n(MailHog/Resend)" as smtp
+
+== 1. Creare cerere ==
+
+banker -> ui: Completează formular cerere
+ui -> middleware: POST /api/CreditRequests\n(JWT bearer)
+middleware -> middleware: Validează JWT\n(SecurityStamp check)
+middleware -> middleware: Authorization\n(Admin/Analyst/Banker)
+middleware -> ctrl_cr: Forward request
+
+ctrl_cr -> svc_cr: CreateAsync(dto)
+svc_cr -> db: GetClientById(dto.ClientId)
+db --> svc_cr: Client entity
+
+svc_cr -> scoring: CalculateScore(client, amount, term)
+note right of scoring
+  4 factori ponderați (max 100):
+  • Debt ratio (30 pct)
+  • Employment status (25 pct)
+  • Income ratio (25 pct)
+  • Vârsta (20 pct)
+end note
+scoring --> svc_cr: score: int (0-100)
+
+svc_cr -> scoring: DetermineRiskLevel(score)
+scoring --> svc_cr: "Low" | "Medium" | "High"
+
+svc_cr -> db: INSERT CreditRequest\n(status=Pending)
+db --> svc_cr: ✓ saved
+
+== 2. Notificare email broadcast la analiști ==
+
+svc_cr -> db: GetAllAsync() Users
+db --> svc_cr: List<User>
+
+loop pentru fiecare Admin/Analyst activ
+  svc_cr -> db: GetByUserId UserPreference
+  db --> svc_cr: UserPreference?
+  alt notifyEmailNewRequest = true (default)
+    svc_cr -> email: Enqueue(NewRequestForAnalyst)
+    email -> smtp: Trimite async\n(fire-and-forget)
+    note right of email
+      Task.Run cu logging
+      la eroare. Nu blochează
+      response-ul HTTP.
+    end note
+  end
+end
+
+svc_cr --> ctrl_cr: CreditRequestDto
+ctrl_cr --> ui: 201 Created
+ui --> banker: Confirmare cerere
+
+smtp -> analyst: Email "Cerere nouă: <client> — <sumă>"
+
+== 3. Analyst decide ==
+
+analyst -> ui: Deschide Panel Analist
+ui -> middleware: GET /api/CreditRequests\n?status=Pending
+middleware -> ctrl_cr: GetPaged()
+ctrl_cr -> svc_cr: GetPagedAsync(...)
+svc_cr -> db: SELECT cu paginare
+db --> svc_cr: items
+svc_cr --> ctrl_cr: PagedResult
+ctrl_cr --> ui: items + totals
+ui --> analyst: Listă cereri
+
+analyst -> ui: Click "Aprobă Creditul"\n(sumă, dobândă, note)
+ui -> middleware: POST /api/Decisions\n(JWT bearer)
+middleware -> ctrl_d: Forward
+
+ctrl_d -> svc_d: CreateAsync(dto, analystId)
+svc_d -> db: GetCreditRequest
+db --> svc_d: CreditRequest
+
+svc_d -> db: CHECK Decision existentă?
+db --> svc_d: null (sau Conflict 409)
+
+svc_d -> db: INSERT Decision\n(DecisionType=Approved)
+db --> svc_d: ✓ saved
+
+svc_d -> db: UPDATE CreditRequest\n(status=Approved)
+db --> svc_d: ✓ updated
+
+== 4. Email către client ==
+
+svc_d -> email: Enqueue(DecisionMade)
+email -> smtp: Trimite async
+smtp -> client: Email "Cererea ta de credit\na fost aprobată" + detalii
+
+svc_d --> ctrl_d: DecisionDto
+ctrl_d --> ui: 201 Created
+ui --> analyst: Confirmare decizie
+
+@enduml

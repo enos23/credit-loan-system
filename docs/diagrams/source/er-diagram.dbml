@@ -1,0 +1,116 @@
+// CreditWise — Schema ER (Entity-Relationship)
+// Import în https://dbdiagram.io ca să generezi diagrama vizuală.
+// Export ca PNG/SVG în docs/diagrams/exports/er-diagram.png
+
+Project CreditWise {
+  database_type: 'PostgreSQL'
+  Note: '''
+  Sistem de gestionare a creditelor bancare.
+  5 entități cu integritate referențială prin FK constraints.
+  '''
+}
+
+Table Users {
+  Id uuid [pk]
+  Email varchar(100) [not null, unique]
+  PasswordHash varchar [not null, note: 'BCrypt cost 11']
+  FirstName varchar(50) [not null]
+  LastName varchar(50) [not null]
+  Role int [not null, note: '0=Admin, 1=Analyst, 2=Banker']
+  Phone varchar [null]
+  Bio varchar [null]
+  AvatarGradient varchar [null]
+  IsActive boolean [not null, default: true]
+  CreatedAt timestamptz [not null]
+  ResetPasswordToken varchar [null]
+  ResetPasswordTokenExpiry timestamptz [null]
+  SecurityStamp uuid [not null, note: 'Regenerat la schimbare parolă / rol / dezactivare']
+
+  Note: '''
+  Utilizatori interni (Admin, Analyst, Banker).
+  Soft delete prin IsActive=false.
+  '''
+}
+
+Table Clients {
+  Id uuid [pk]
+  CNP varchar(13) [not null, unique]
+  FirstName varchar [not null]
+  LastName varchar [not null]
+  Email varchar [not null]
+  Phone varchar [not null]
+  DateOfBirth timestamptz [not null]
+  Address varchar [not null]
+  EmploymentStatus int [not null, note: '0=Employed, 1=Unemployed, 2=SelfEmployed, 3=Retired']
+  MonthlyIncome numeric(18,2) [not null]
+  MonthlyExpenses numeric(18,2) [not null]
+  CreatedAt timestamptz [not null]
+
+  Note: 'Solicitanți de credit. CNP unic identifică clientul în sistem.'
+}
+
+Table CreditRequests {
+  Id uuid [pk]
+  ClientId uuid [not null, ref: > Clients.Id]
+  AssignedAnalystId uuid [null, ref: > Users.Id, note: 'SET NULL la ștergere analist']
+  Amount numeric(18,2) [not null]
+  TermMonths int [not null]
+  Purpose varchar [not null]
+  Status int [not null, note: '0=Pending, 1=UnderReview, 2=Approved, 3=Rejected']
+  CreditScore int [not null, note: '0-100, calculat la creare']
+  RiskLevel int [not null, note: '0=Low, 1=Medium, 2=High']
+  CreatedAt timestamptz [not null]
+  UpdatedAt timestamptz [not null]
+
+  Note: '''
+  Cereri de credit. Scoring automat la creare prin ScoringService:
+  4 factori ponderați (debt ratio, employment, income ratio, age).
+  '''
+}
+
+Table Decisions {
+  Id uuid [pk]
+  CreditRequestId uuid [not null, unique, ref: - CreditRequests.Id, note: '1:1 relationship']
+  AnalystId uuid [not null, ref: > Users.Id, note: 'RESTRICT la ștergere - audit trail intact']
+  DecisionType int [not null, note: '0=Approved, 1=Rejected, 2=NeedsMoreInfo']
+  InterestRate numeric(5,2) [null]
+  ApprovedAmount numeric(18,2) [null]
+  Notes varchar [not null]
+  CreatedAt timestamptz [not null]
+
+  Note: '''
+  Decizia analistului. Trigger email notificare client la Approved/Rejected.
+  Constraint Restrict pe AnalystId protejează istoricul deciziilor.
+  '''
+}
+
+Table UserPreferences {
+  Id uuid [pk]
+  UserId uuid [not null, unique, ref: - Users.Id, note: '1:1, CASCADE delete']
+  NotifyEmailNewRequest boolean [not null, default: true]
+  NotifyEmailDecision boolean [not null, default: true]
+  NotifyBrowserAlerts boolean [not null, default: false]
+  NotifyWeeklyReport boolean [not null, default: true]
+  Language varchar(8) [not null, default: 'ro']
+  DateFormat varchar(20) [not null, default: 'dd/mm/yyyy']
+  ItemsPerPage int [not null, default: 10]
+  Theme varchar(20) [not null, default: 'light']
+  CreatedAt timestamptz [not null]
+  UpdatedAt timestamptz [not null]
+
+  Note: '''
+  Preferințe utilizator. Lazy-created la primul GET.
+  CASCADE delete - preferințele dispar odată cu utilizatorul.
+  '''
+}
+
+// Relațiile sunt declarate inline pe coloane (sintaxa `ref: > Table.Column`).
+// Delete behavior e documentat în note-urile coloanelor pentru că dbdiagram
+// nu randează vizual acțiunile de cascade.
+//
+// Cele 5 relații concrete în sistem:
+//   Clients.Id           1 — N  CreditRequests.ClientId            (Restrict)
+//   Users.Id             1 — N  CreditRequests.AssignedAnalystId   (SET NULL)
+//   CreditRequests.Id    1 — 1  Decisions.CreditRequestId          (Cascade)
+//   Users.Id             1 — N  Decisions.AnalystId                (Restrict)
+//   Users.Id             1 — 1  UserPreferences.UserId             (Cascade)

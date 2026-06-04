@@ -1,0 +1,75 @@
+%% CreditWise — Diagramă arhitectură Clean Architecture
+%% Render în https://mermaid.live → export PNG/SVG în docs/diagrams/exports/architecture.png
+%% Sau renderează direct in GitHub markdown.
+
+flowchart TB
+    subgraph Client["Client Layer"]
+        Browser["Web Browser<br/>React + Vite SPA"]
+    end
+
+    subgraph API["API Layer (CreditApp.API)"]
+        Controllers["Controllers<br/>9 endpoints"]
+        Middleware["Middleware<br/>JWT Auth · Rate Limit · ProblemDetails"]
+    end
+
+    subgraph App["Application Layer (CreditApp.Application)"]
+        Services["Services<br/>10 servicii: Auth, Client,<br/>CreditRequest, Decision, Chat, etc."]
+        DTOs["DTOs & Validation<br/>Data Annotations"]
+        QueriesInterface["Query interfaces<br/>IDashboardQueries · IReportsQueries"]
+        ChatTools["AI Chat Tools<br/>7 read-only tools"]
+        EmailTemplates["Email Templates<br/>Reset · Decision · NewRequest"]
+    end
+
+    subgraph Domain["Domain Layer (CreditApp.Domain)"]
+        Entities["Entities<br/>User · Client · CreditRequest<br/>Decision · UserPreference"]
+        RepoInterfaces["Repository<br/>interfaces"]
+        Enums["Enums<br/>UserRole · CreditStatus<br/>RiskLevel · DecisionType"]
+    end
+
+    subgraph Infra["Infrastructure Layer (CreditApp.Infrastructure)"]
+        EFCore["EF Core<br/>AppDbContext + Migrations"]
+        Repos["Repositories<br/>5 implementări"]
+        QueriesImpl["Query implementations<br/>EF aggregates · ILIKE search"]
+        SMTP["SmtpEmailService<br/>MailKit"]
+        Anthropic["AnthropicClient<br/>HttpClient direct"]
+    end
+
+    subgraph External["External Services"]
+        Postgres[("PostgreSQL<br/>Supabase")]
+        Mail["SMTP<br/>MailHog (dev)<br/>Resend (prod)"]
+        Claude["Anthropic<br/>Claude Sonnet 4.6"]
+    end
+
+    Browser -->|HTTPS + JWT| Controllers
+    Controllers --> Middleware
+    Middleware --> Services
+    Services --> DTOs
+    Services --> RepoInterfaces
+    Services --> QueriesInterface
+    Services --> ChatTools
+    ChatTools --> Services
+    Services --> EmailTemplates
+    Services --> Entities
+    RepoInterfaces -.implementat.-> Repos
+    QueriesInterface -.implementat.-> QueriesImpl
+    Repos --> EFCore
+    QueriesImpl --> EFCore
+    EFCore --> Postgres
+    Services -->|Enqueue| SMTP
+    SMTP --> Mail
+    Services -->|tool use loop| Anthropic
+    Anthropic --> Claude
+
+    classDef apiLayer fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a
+    classDef appLayer fill:#ede9fe,stroke:#8b5cf6,color:#4c1d95
+    classDef domainLayer fill:#fef3c7,stroke:#f59e0b,color:#78350f
+    classDef infraLayer fill:#fce7f3,stroke:#ec4899,color:#831843
+    classDef externalLayer fill:#e0e7ff,stroke:#6366f1,color:#312e81
+    classDef clientLayer fill:#d1fae5,stroke:#10b981,color:#064e3b
+
+    class Controllers,Middleware apiLayer
+    class Services,DTOs,QueriesInterface,ChatTools,EmailTemplates appLayer
+    class Entities,RepoInterfaces,Enums domainLayer
+    class EFCore,Repos,QueriesImpl,SMTP,Anthropic infraLayer
+    class Postgres,Mail,Claude externalLayer
+    class Browser clientLayer

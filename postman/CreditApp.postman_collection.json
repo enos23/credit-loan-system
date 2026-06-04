@@ -1,0 +1,324 @@
+{
+	"info": {
+		"_postman_id": "creditapp-collection-v1",
+		"name": "CreditApp API",
+		"description": "Collection completă pentru API-ul CreditWise. Setează variabilele de colecție `baseUrl` și `token` înainte de utilizare. Login-ul setează `token` automat prin script-ul de Test.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:5286" },
+		{ "key": "token", "value": "" },
+		{ "key": "clientId", "value": "" },
+		{ "key": "creditRequestId", "value": "" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"if (pm.response.code === 200) {",
+								"  const data = pm.response.json();",
+								"  pm.collectionVariables.set('token', data.token);",
+								"  console.log('Token saved:', data.token.substring(0, 20) + '...');",
+								"}"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "noauth" },
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@creditapp.com\",\n  \"password\": \"YourPasswordHere\"\n}"
+						},
+						"url": { "raw": "{{baseUrl}}/api/Auth/login", "host": ["{{baseUrl}}"], "path": ["api", "Auth", "login"] }
+					}
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"auth": { "type": "noauth" },
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "Auth", "forgot-password"] }
+					}
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"auth": { "type": "noauth" },
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"token\": \"<from email>\",\n  \"newPassword\": \"NewSecure123!\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Auth/reset-password", "host": ["{{baseUrl}}"], "path": ["api", "Auth", "reset-password"] }
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"...\",\n  \"newPassword\": \"NewSecure456!\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Auth/change-password", "host": ["{{baseUrl}}"], "path": ["api", "Auth", "change-password"] }
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Ana\",\n  \"lastName\": \"Popescu\",\n  \"phone\": \"+40722000000\",\n  \"bio\": \"Analist senior\",\n  \"avatarGradient\": \"violet\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "Auth", "profile"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Users (Admin only)",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Users", "host": ["{{baseUrl}}"], "path": ["api", "Users"] } }
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"email\": \"new.analyst@bank.ro\",\n  \"password\": \"Secure123!\",\n  \"firstName\": \"Maria\",\n  \"lastName\": \"Ionescu\",\n  \"role\": \"Analyst\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Users", "host": ["{{baseUrl}}"], "path": ["api", "Users"] }
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Maria\",\n  \"lastName\": \"Ionescu\",\n  \"role\": \"Admin\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Users/:id", "host": ["{{baseUrl}}"], "path": ["api", "Users", ":id"], "variable": [{ "key": "id", "value": "<user guid>" }] }
+					}
+				},
+				{
+					"name": "Toggle Active",
+					"request": {
+						"method": "PATCH",
+						"url": { "raw": "{{baseUrl}}/api/Users/:id/toggle-active", "host": ["{{baseUrl}}"], "path": ["api", "Users", ":id", "toggle-active"], "variable": [{ "key": "id", "value": "<user guid>" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "Get Paged Clients",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"if (pm.response.code === 200) {",
+								"  const items = pm.response.json().items;",
+								"  if (items && items[0]) pm.collectionVariables.set('clientId', items[0].id);",
+								"}"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/Clients?page=1&pageSize=20&search=",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Clients"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "pageSize", "value": "20" },
+								{ "key": "search", "value": "" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Client by ID",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Clients/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["api", "Clients", "{{clientId}}"] } }
+				},
+				{
+					"name": "Get Client by CNP",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Clients/cnp/1900101123456", "host": ["{{baseUrl}}"], "path": ["api", "Clients", "cnp", "1900101123456"] } }
+				},
+				{
+					"name": "Create Client",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"cnp\": \"1900101123456\",\n  \"firstName\": \"George\",\n  \"lastName\": \"Marinescu\",\n  \"email\": \"george.marinescu@gmail.com\",\n  \"phone\": \"+40700000000\",\n  \"dateOfBirth\": \"1990-01-01T00:00:00\",\n  \"address\": \"Str. Florilor 12, București\",\n  \"employmentStatus\": \"Employed\",\n  \"monthlyIncome\": 8000,\n  \"monthlyExpenses\": 2000\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Clients", "host": ["{{baseUrl}}"], "path": ["api", "Clients"] }
+					}
+				},
+				{
+					"name": "Update Client",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"cnp\": \"1900101123456\",\n  \"firstName\": \"George\",\n  \"lastName\": \"Marinescu\",\n  \"email\": \"george.marinescu@gmail.com\",\n  \"phone\": \"+40711111111\",\n  \"dateOfBirth\": \"1990-01-01T00:00:00\",\n  \"address\": \"Str. Nouă 5\",\n  \"employmentStatus\": \"Employed\",\n  \"monthlyIncome\": 9000,\n  \"monthlyExpenses\": 2500\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Clients/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["api", "Clients", "{{clientId}}"] }
+					}
+				},
+				{
+					"name": "Delete Client (Admin)",
+					"request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/Clients/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["api", "Clients", "{{clientId}}"] } }
+				}
+			]
+		},
+		{
+			"name": "Credit Requests",
+			"item": [
+				{
+					"name": "Get Paged Credit Requests",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"if (pm.response.code === 200) {",
+								"  const items = pm.response.json().items;",
+								"  if (items && items[0]) pm.collectionVariables.set('creditRequestId', items[0].id);",
+								"}"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/CreditRequests?page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "CreditRequests"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "pageSize", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Credit Request by ID",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/CreditRequests/{{creditRequestId}}", "host": ["{{baseUrl}}"], "path": ["api", "CreditRequests", "{{creditRequestId}}"] } }
+				},
+				{
+					"name": "Get Credit Requests by Client",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/CreditRequests/client/{{clientId}}", "host": ["{{baseUrl}}"], "path": ["api", "CreditRequests", "client", "{{clientId}}"] } }
+				},
+				{
+					"name": "Create Credit Request",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"clientId\": \"{{clientId}}\",\n  \"amount\": 30000,\n  \"termMonths\": 24,\n  \"purpose\": \"Renovare apartament\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/CreditRequests", "host": ["{{baseUrl}}"], "path": ["api", "CreditRequests"] }
+					}
+				},
+				{
+					"name": "Update Status (Admin/Analyst)",
+					"request": {
+						"method": "PATCH",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"status\": \"UnderReview\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/CreditRequests/{{creditRequestId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "CreditRequests", "{{creditRequestId}}", "status"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Decisions",
+			"item": [
+				{
+					"name": "Get Decision by ID",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Decisions/:id", "host": ["{{baseUrl}}"], "path": ["api", "Decisions", ":id"], "variable": [{ "key": "id", "value": "<decision guid>" }] } }
+				},
+				{
+					"name": "Get Decision by Credit Request",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Decisions/credit-request/{{creditRequestId}}", "host": ["{{baseUrl}}"], "path": ["api", "Decisions", "credit-request", "{{creditRequestId}}"] } }
+				},
+				{
+					"name": "Create Decision (Admin/Analyst)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"creditRequestId\": \"{{creditRequestId}}\",\n  \"decisionType\": \"Approved\",\n  \"interestRate\": 7.5,\n  \"approvedAmount\": 30000,\n  \"notes\": \"Scor bun, documente complete\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Decisions", "host": ["{{baseUrl}}"], "path": ["api", "Decisions"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Dashboard & Reports",
+			"item": [
+				{
+					"name": "Get Dashboard",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Dashboard", "host": ["{{baseUrl}}"], "path": ["api", "Dashboard"] } }
+				},
+				{
+					"name": "Get Reports",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Reports", "host": ["{{baseUrl}}"], "path": ["api", "Reports"] } }
+				},
+				{
+					"name": "Get Transactions",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/Transactions", "host": ["{{baseUrl}}"], "path": ["api", "Transactions"] } }
+				}
+			]
+		},
+		{
+			"name": "User Preferences",
+			"item": [
+				{
+					"name": "Get My Preferences",
+					"request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/preferences", "host": ["{{baseUrl}}"], "path": ["api", "preferences"] } }
+				},
+				{
+					"name": "Update My Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"notifyEmailNewRequest\": true,\n  \"notifyEmailDecision\": true,\n  \"notifyBrowserAlerts\": false,\n  \"notifyWeeklyReport\": true,\n  \"language\": \"ro\",\n  \"dateFormat\": \"dd/mm/yyyy\",\n  \"itemsPerPage\": 25,\n  \"theme\": \"light\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/preferences", "host": ["{{baseUrl}}"], "path": ["api", "preferences"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "AI Chat",
+			"item": [
+				{
+					"name": "Send Chat Message",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"message\": \"Câte cereri pending sunt în acest moment?\",\n  \"history\": []\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Chat/message", "host": ["{{baseUrl}}"], "path": ["api", "Chat", "message"] }
+					}
+				},
+				{
+					"name": "Send Chat Message (with history)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"message\": \"Care e clientul cu cel mai mare credit aprobat?\",\n  \"history\": [\n    {\n      \"role\": \"user\",\n      \"content\": [{ \"type\": \"text\", \"text\": \"Salut\" }]\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": [{ \"type\": \"text\", \"text\": \"Salut! Cu ce te pot ajuta?\" }]\n    }\n  ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/Chat/message", "host": ["{{baseUrl}}"], "path": ["api", "Chat", "message"] }
+					}
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,142 @@
+@startuml
+' CreditWise — Use Case Diagram
+' Render în https://www.plantuml.com/plantuml → export PNG/SVG
+' Salvează exportul în docs/diagrams/exports/use-cases.png
+
+title CreditWise — Use Cases per Rol
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam actorBorderColor #475569
+skinparam actorBackgroundColor #f1f5f9
+skinparam packageBackgroundColor #ffffff
+skinparam packageBorderColor #94a3b8
+skinparam usecaseBorderColor #6366f1
+skinparam usecaseBackgroundColor #eef2ff
+
+actor "Admin" as admin
+actor "Analyst" as analyst
+actor "Banker" as banker
+
+package "Autentificare" {
+  usecase "Login" as UC_login
+  usecase "Schimbare parolă" as UC_change_pw
+  usecase "Reset parolă\n(prin email)" as UC_reset_pw
+  usecase "Actualizare profil" as UC_profile
+}
+
+package "Gestionare clienți" {
+  usecase "Vizualizare listă clienți" as UC_list_clients
+  usecase "Căutare client după CNP" as UC_search_cnp
+  usecase "Adăugare client" as UC_add_client
+  usecase "Editare client" as UC_edit_client
+  usecase "Ștergere client" as UC_delete_client
+}
+
+package "Cereri de credit" {
+  usecase "Vizualizare cereri" as UC_list_requests
+  usecase "Creare cerere nouă\n(cu scoring automat)" as UC_create_request
+  usecase "Vizualizare detalii cerere" as UC_view_request
+}
+
+package "Workflow decizional" {
+  usecase "Vizualizare panel analist" as UC_panel
+  usecase "Aprobare cerere" as UC_approve
+  usecase "Respingere cerere" as UC_reject
+  usecase "Solicitare informații\nsuplimentare" as UC_needs_info
+}
+
+package "Tranzacții & Rapoarte" {
+  usecase "Vizualizare disbursări" as UC_transactions
+  usecase "Vizualizare dashboard" as UC_dashboard
+  usecase "Vizualizare rapoarte" as UC_reports
+  usecase "Export PDF raport" as UC_export
+}
+
+package "Gestionare utilizatori" {
+  usecase "Vizualizare utilizatori" as UC_list_users
+  usecase "Creare utilizator" as UC_create_user
+  usecase "Editare rol utilizator" as UC_edit_role
+  usecase "Activare/Dezactivare cont" as UC_toggle_active
+}
+
+package "AI Assistant" {
+  usecase "Interogare date\nîn limbaj natural" as UC_chat
+  usecase "Tools restrânse\n(fără decision/transactions)" as UC_chat_restricted
+}
+
+package "Configurare personală" {
+  usecase "Setări preferințe\n(notificări, paginare)" as UC_settings
+}
+
+' Banker — acces de bază
+banker --> UC_login
+banker --> UC_change_pw
+banker --> UC_reset_pw
+banker --> UC_profile
+banker --> UC_list_clients
+banker --> UC_search_cnp
+banker --> UC_add_client
+banker --> UC_edit_client
+banker --> UC_list_requests
+banker --> UC_create_request
+banker --> UC_view_request
+banker --> UC_dashboard
+banker --> UC_reports
+banker --> UC_export
+banker --> UC_settings
+banker --> UC_chat_restricted
+
+' Analyst — toate ale banker + decizii + tranzacții
+analyst --> UC_login
+analyst --> UC_change_pw
+analyst --> UC_reset_pw
+analyst --> UC_profile
+analyst --> UC_list_clients
+analyst --> UC_search_cnp
+analyst --> UC_add_client
+analyst --> UC_edit_client
+analyst --> UC_list_requests
+analyst --> UC_create_request
+analyst --> UC_view_request
+analyst --> UC_panel
+analyst --> UC_approve
+analyst --> UC_reject
+analyst --> UC_needs_info
+analyst --> UC_transactions
+analyst --> UC_dashboard
+analyst --> UC_reports
+analyst --> UC_export
+analyst --> UC_settings
+analyst --> UC_chat
+
+' Admin — toate ale analyst + management utilizatori + ștergere clienți
+admin --> UC_login
+admin --> UC_change_pw
+admin --> UC_reset_pw
+admin --> UC_profile
+admin --> UC_list_clients
+admin --> UC_search_cnp
+admin --> UC_add_client
+admin --> UC_edit_client
+admin --> UC_delete_client
+admin --> UC_list_requests
+admin --> UC_create_request
+admin --> UC_view_request
+admin --> UC_panel
+admin --> UC_approve
+admin --> UC_reject
+admin --> UC_needs_info
+admin --> UC_transactions
+admin --> UC_dashboard
+admin --> UC_reports
+admin --> UC_export
+admin --> UC_list_users
+admin --> UC_create_user
+admin --> UC_edit_role
+admin --> UC_toggle_active
+admin --> UC_settings
+admin --> UC_chat
+
+@enduml
