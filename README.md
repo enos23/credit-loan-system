@@ -179,6 +179,49 @@ npm run dev
 
 Frontend pe `http://localhost:5173`. Login cu credențialele admin seed-uite.
 
+## Rulare cu Docker
+
+Stiva completă (backend + frontend + MailHog) pornește cu o singură comandă.
+
+### Cerințe
+- Docker 20.10+ și Docker Compose v2
+
+### Pași
+
+```bash
+# 1. Configurare environment
+cp .env.example .env
+# Editează .env și pune valori reale pentru:
+#   JWT_SECRET_KEY            (openssl rand -base64 48)
+#   DB_CONNECTION_STRING      (Supabase Session pooler URL în format Npgsql)
+#   ANTHROPIC_API_KEY         (de la console.anthropic.com)
+#   ADMIN_PASSWORD            (parolă strong pentru utilizatorul admin seed)
+
+# 2. Build + start
+docker compose up --build
+
+# 3. Acces
+#   Frontend:  http://localhost:5173
+#   API:       http://localhost:5286
+#   MailHog:   http://localhost:8025  (inbox-ul dev)
+```
+
+### Servicii orchestrate
+
+| Container | Image base | Port pe host | Rol |
+|---|---|---|---|
+| `creditwise-frontend` | `nginx:1.27-alpine` | 5173 → 80 | Servește build-ul Vite cu SPA fallback la `index.html` |
+| `creditwise-api` | `mcr.microsoft.com/dotnet/aspnet:9.0` | 5286 → 8080 | ASP.NET Core API + migrații EF automate la pornire |
+| `creditwise-mailhog` | `mailhog/mailhog:latest` | 1025 + 8025 | SMTP de dezvoltare, interceptează toate email-urile |
+
+### Stop și cleanup
+
+```bash
+docker compose down              # oprește container-ele, păstrează volumele
+docker compose down -v           # oprește și șterge volumele
+docker compose build --no-cache  # rebuild de la zero
+```
+
 ## Structura proiectului
 
 ```

@@ -1,0 +1,44 @@
+# Applies to the backend image build (context = repo root).
+# Frontend has its own .dockerignore inside frontend/.
+
+# Build artifacts (.NET)
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Node (in case frontend ends up in context for any reason)
+**/node_modules/
+**/dist/
+
+# IDE
+**/.vs/
+**/.vscode/
+**/.idea/
+
+# Local config / secrets — env vars are passed at runtime
+**/appsettings.Local.json
+**/appsettings.Development.json
+**/.env
+**/.env.*
+
+# Repo-level files not needed at runtime
+.git/
+.gitignore
+.dockerignore
+**/Dockerfile*
+docker-compose*.yml
+README.md
+CHATBOT.md
+docs/
+postman/
+.postman/
+.claude/
+*.sln
+*.deb
+*.sh
+
+# Misc
+**/.DS_Store
+**/TestResults/
+**/*.trx

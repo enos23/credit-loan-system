@@ -1,0 +1,64 @@
+# CreditWise — Local development stack
+#
+# Usage:
+#   1. cp .env.example .env
+#   2. Fill in the values (Supabase connection string, JWT secret, Anthropic key, admin password)
+#   3. docker compose up --build
+#
+# Services exposed on host:
+#   - http://localhost:5173       Frontend (nginx serving React build)
+#   - http://localhost:5286/api   Backend API
+#   - http://localhost:8025       MailHog UI (intercepted dev emails)
+
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: creditwise-mailhog
+    ports:
+      - "1025:1025"  # SMTP — backend connects here
+      - "8025:8025"  # Web UI — open in browser to read emails
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: CreditApp.API/Dockerfile
+    container_name: creditwise-api
+    ports:
+      - "5286:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+
+      # Secrets — sourced from .env
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY}
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_STRING}
+      Anthropic__ApiKey: ${ANTHROPIC_API_KEY}
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@creditapp.com}
+      Seed__AdminPassword: ${ADMIN_PASSWORD}
+
+      # Email points to the MailHog container; FromEmail/FromName have sensible
+      # defaults from appsettings.json.
+      Email__SmtpHost: mailhog
+      Email__SmtpPort: 1025
+      Email__UseStartTls: "false"
+      Email__FromEmail: noreply@creditwise.local
+      Email__FrontendBaseUrl: ${FRONTEND_URL:-http://localhost:5173}
+    depends_on:
+      - mailhog
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Vite bakes this in at build time. For production deploys, build the
+        # image once per environment with the right URL.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5286/api}
+    container_name: creditwise-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
