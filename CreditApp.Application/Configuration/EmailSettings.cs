@@ -23,4 +23,10 @@ public class EmailSettings
     // without contacting any SMTP server. Useful for tests or when the smtp host
     // is intentionally unset.
     public bool Enabled { get; set; } = true;
+
+    // When true, IEmailService is wired to the Resend HTTPS REST API (api.resend.com)
+    // instead of SMTP. Needed for cloud hosts that block outbound SMTP ports
+    // (Render free tier blocks 25/465/587).
+    public bool UseResendApi { get; set; } = false;
+    public string ResendApiKey { get; set; } = string.Empty;
 }

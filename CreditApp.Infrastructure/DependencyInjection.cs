@@ -38,9 +38,23 @@ public static class DependencyInjection
         services.AddScoped<IDashboardQueries, DashboardQueries>();
         services.AddScoped<IReportsQueries, ReportsQueries>();
 
-        // Singleton: SmtpEmailService holds no state and creates a fresh SmtpClient
-        // per call; safe to share across the app.
-        services.AddSingleton<IEmailService, SmtpEmailService>();
+        // IEmailService implementation depends on transport:
+        //  - Resend HTTPS REST API for cloud hosts that block outbound SMTP (Render free tier)
+        //  - SMTP for local dev with MailHog and any environment where SMTP is reachable
+        var emailSettings = configuration.GetSection("Email").Get<EmailSettings>() ?? new EmailSettings();
+        if (emailSettings.UseResendApi)
+        {
+            services.AddHttpClient<IEmailService, ResendEmailService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+        }
+        else
+        {
+            // Singleton: SmtpEmailService holds no state and creates a fresh SmtpClient
+            // per call; safe to share across the app.
+            services.AddSingleton<IEmailService, SmtpEmailService>();
+        }
 
         // Anthropic API client. The HttpClient is configured once at registration
         // so callers don't have to set headers/base address on each request.
