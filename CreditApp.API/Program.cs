@@ -143,16 +143,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Allowed Origins
-
-var allowedOrigins = builder.Configuration
-    .GetValue<string>("ALLOWED_ORIGINS")
-    ?.Split(',') ?? new[] { "http://localhost:5173" };
-
-policy.WithOrigins(allowedOrigins)
-      .AllowAnyHeader()
-      .AllowAnyMethod();
-
 var app = builder.Build();
 
 // Middleware pipeline
