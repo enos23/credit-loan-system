@@ -128,13 +128,30 @@ builder.Services.AddRateLimiter(options =>
 // CORS
 builder.Services.AddCors(options =>
 {
+    // Origins come from config (`Cors:AllowedOrigins` array) so prod / preview /
+    // local can each set their own list via env vars (Cors__AllowedOrigins__0=...,
+    // Cors__AllowedOrigins__1=..., etc.). The localhost default lets dev work
+    // out of the box.
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? new[] { "http://localhost:5173" };
+
     options.AddPolicy("AllowReact", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
+
+// Allowed Origins
+
+var allowedOrigins = builder.Configuration
+    .GetValue<string>("ALLOWED_ORIGINS")
+    ?.Split(',') ?? new[] { "http://localhost:5173" };
+
+policy.WithOrigins(allowedOrigins)
+      .AllowAnyHeader()
+      .AllowAnyMethod();
 
 var app = builder.Build();
 
