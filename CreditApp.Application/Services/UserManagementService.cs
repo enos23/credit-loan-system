@@ -73,6 +73,9 @@ public class UserManagementService : IUserManagementService
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null) return false;
 
+        if (user.Email == "admin@creditapp.com" && user.IsActive)
+            throw new InvalidOperationException("Contul principal de administrator nu poate fi dezactivat.");
+
         user.IsActive = !user.IsActive;
         if (!user.IsActive)
             user.SecurityStamp = Guid.NewGuid();
@@ -88,6 +91,7 @@ public class UserManagementService : IUserManagementService
         LastName = user.LastName,
         Role = user.Role.ToString(),
         IsActive = user.IsActive,
+        AvatarGradient = user.AvatarGradient,
         CreatedAt = user.CreatedAt
     };
 }

@@ -14,13 +14,13 @@ const RISK_COLORS = { Low: '#10b981', Medium: '#f59e0b', High: '#ef4444' };
 const RISK_LABELS = { Low: 'Scăzut', Medium: 'Mediu', High: 'Ridicat' };
 
 const StatCard = ({ label, value, icon: Icon, color, bg }) => (
-    <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-        <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+    <div className="bg-white/80 border border-white/80 rounded-3xl p-5 shadow-sm flex items-center gap-4 backdrop-blur-md">
+        <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center shrink-0`}>
             <Icon size={20} className={color} />
         </div>
         <div>
-            <p className="text-xl font-extrabold text-slate-800">{value}</p>
-            <p className="text-xs font-semibold text-slate-500 mt-0.5">{label}</p>
+            <p className="text-2xl font-extrabold text-slate-800 tracking-tight leading-none mb-1">{value}</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</p>
         </div>
     </div>
 );
@@ -74,8 +74,31 @@ const ReportsPage = () => {
                 @media print {
                     body * { visibility: hidden; }
                     #raport-print, #raport-print * { visibility: visible; }
-                    #raport-print { position: absolute; left: 0; top: 0; width: 100%; }
+                    #raport-print { 
+                        position: absolute; 
+                        left: 0; 
+                        top: 0; 
+                        width: 100%; 
+                    }
                     .no-print { display: none !important; }
+                    
+                    /* Force background graphics to print in PDF generation */
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        color-adjust: exact !important;
+                    }
+
+                    /* Prevent awkward cuts between pages */
+                    .print-card-avoid {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
+                    @page {
+                        size: A4 portrait;
+                        margin: 15mm 15mm 20mm 15mm;
+                    }
                 }
             `}</style>
 
@@ -87,7 +110,7 @@ const ReportsPage = () => {
                     </div>
                     <button
                         onClick={() => window.print()}
-                        className="no-print flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:bg-slate-800 transition-all"
+                        className="no-print flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-[0_4px_14px_rgba(79,70,229,0.15)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.35)] transition-all hover:scale-[1.02] active:scale-[0.98] border-0"
                     >
                         <FileDown size={17} />
                         Exportă PDF
@@ -101,7 +124,7 @@ const ReportsPage = () => {
                     </div>
 
                     {/* KPI grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 print-card-avoid">
                         <StatCard label="Total Cereri" value={data.totalRequests} icon={FileText} color="text-indigo-600" bg="bg-indigo-50" />
                         <StatCard label="Aprobate" value={data.approvedCount} icon={CheckCircle} color="text-emerald-600" bg="bg-emerald-50" />
                         <StatCard label="Respinse" value={data.rejectedCount} icon={XCircle} color="text-red-600" bg="bg-red-50" />
@@ -111,24 +134,27 @@ const ReportsPage = () => {
                     </div>
 
                     {/* Amount summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 rounded-2xl text-white shadow-lg">
-                            <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wide mb-2">Valoare totală cereri</p>
-                            <p className="text-2xl font-extrabold">{data.totalAmount.toLocaleString('ro-RO')} RON</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 print-card-avoid">
+                        <div className="bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-800 p-6 rounded-3xl text-white shadow-xl shadow-indigo-500/10 border border-indigo-400/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8" />
+                            <p className="text-indigo-200 text-xs font-bold uppercase tracking-wide mb-2">Valoare totală cereri</p>
+                            <p className="text-3xl font-extrabold tracking-tight">{data.totalAmount.toLocaleString('ro-RO')} <span className="text-sm font-semibold">RON</span></p>
                         </div>
-                        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-2xl text-white shadow-lg">
-                            <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wide mb-2">Valoare aprobată</p>
-                            <p className="text-2xl font-extrabold">{data.approvedAmount.toLocaleString('ro-RO')} RON</p>
+                        <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 rounded-3xl text-white shadow-xl shadow-emerald-500/10 border border-emerald-400/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8" />
+                            <p className="text-emerald-200 text-xs font-bold uppercase tracking-wide mb-2">Valoare aprobată</p>
+                            <p className="text-3xl font-extrabold tracking-tight">{data.approvedAmount.toLocaleString('ro-RO')} <span className="text-sm font-semibold">RON</span></p>
                         </div>
-                        <div className="bg-gradient-to-br from-violet-500 to-purple-700 p-6 rounded-2xl text-white shadow-lg">
-                            <p className="text-violet-200 text-xs font-semibold uppercase tracking-wide mb-2">Sumă medie cerere</p>
-                            <p className="text-2xl font-extrabold">{data.averageAmount.toLocaleString('ro-RO')} RON</p>
+                        <div className="bg-gradient-to-br from-violet-500 via-violet-600 to-purple-800 p-6 rounded-3xl text-white shadow-xl shadow-violet-500/10 border border-violet-400/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8" />
+                            <p className="text-violet-200 text-xs font-bold uppercase tracking-wide mb-2">Sumă medie cerere</p>
+                            <p className="text-3xl font-extrabold tracking-tight">{data.averageAmount.toLocaleString('ro-RO')} <span className="text-sm font-semibold">RON</span></p>
                         </div>
                     </div>
 
                     {/* Charts row 1 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print-card-avoid">
+                        <div className="lg:col-span-2 bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm backdrop-blur-md">
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <BarChart2 size={18} className="text-indigo-500" /> Activitate lunară
                             </h3>
@@ -150,7 +176,7 @@ const ReportsPage = () => {
                             )}
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                        <div className="bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm backdrop-blur-md">
                             <h3 className="font-bold text-slate-800 text-base mb-5">Distribuție status</h3>
                             {pieData.length === 0 ? (
                                 <p className="text-slate-400 text-sm text-center py-16">Nu există cereri</p>
@@ -169,8 +195,8 @@ const ReportsPage = () => {
                     </div>
 
                     {/* Charts row 2 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-card-avoid">
+                        <div className="bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm backdrop-blur-md">
                             <h3 className="font-bold text-slate-800 text-base mb-5">Cereri după scop</h3>
                             {(data.byPurpose || []).length === 0 ? (
                                 <p className="text-slate-400 text-sm text-center py-12">Nu există cereri</p>
@@ -186,7 +212,7 @@ const ReportsPage = () => {
                             )}
                         </div>
 
-                        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                        <div className="bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm backdrop-blur-md">
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <AlertTriangle size={17} className="text-amber-500" /> Distribuție risc
                             </h3>
@@ -216,42 +242,42 @@ const ReportsPage = () => {
 
                     {/* Analyst performance */}
                     {(data.analystPerformance || []).length > 0 && (
-                        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                        <div className="bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm backdrop-blur-md print-card-avoid">
                             <h3 className="font-bold text-slate-800 text-base mb-5 flex items-center gap-2">
                                 <Users size={17} className="text-indigo-500" /> Performanță analiști
                             </h3>
                             <div className="overflow-x-auto">
                             <table className="w-full text-sm min-w-[560px]">
                                 <thead>
-                                    <tr className="border-b border-slate-100">
+                                    <tr className="border-b border-slate-100 bg-slate-50/40">
                                         {['Analist', 'Total procesate', 'Aprobate', 'Respinse', 'Rată aprobare'].map(h => (
-                                            <th key={h} className="pb-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                                            <th key={h} className="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
+                                <tbody className="divide-y divide-slate-100">
                                     {data.analystPerformance.map(a => {
                                         const rate = a.total > 0 ? Math.round(a.approved / a.total * 100) : 0;
                                         return (
-                                            <tr key={a.name} className="hover:bg-slate-50/60 transition-colors">
-                                                <td className="py-3.5 font-semibold text-slate-800">{a.name}</td>
-                                                <td className="py-3.5 text-slate-600">{a.total}</td>
-                                                <td className="py-3.5">
-                                                    <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                                            <tr key={a.name} className="hover:bg-slate-50/80 transition-colors">
+                                                <td className="px-6 py-4 font-semibold text-slate-800">{a.name}</td>
+                                                <td className="px-6 py-4 text-slate-600 font-medium">{a.total}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex items-center gap-1 text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100/50">
                                                         <CheckCircle size={13} /> {a.approved}
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5">
-                                                    <span className="inline-flex items-center gap-1 text-red-500 font-semibold">
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex items-center gap-1 text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded-lg border border-red-100/50">
                                                         <XCircle size={13} /> {a.rejected}
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5">
-                                                    <div className="flex items-center gap-2">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2.5">
                                                         <div className="h-2 w-24 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${rate}%` }} />
+                                                            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: `${rate}%` }} />
                                                         </div>
-                                                        <span className="text-xs font-bold text-slate-700">{rate}%</span>
+                                                        <span className="text-xs font-extrabold text-slate-700">{rate}%</span>
                                                     </div>
                                                 </td>
                                             </tr>

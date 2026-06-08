@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, MailCheck, Copy, Check, KeyRound } from 'lucide-react';
+import { ArrowLeft, MailCheck, Copy, Check, KeyRound, Mail } from 'lucide-react';
 import CreditWiseLogo from '../../components/ui/CreditWiseLogo';
 import { forgotPassword } from '../../api/authApi';
 import { extractErrorMessage } from '../../api/errors';
@@ -43,40 +43,45 @@ const ForgotPasswordPage = () => {
             <div className="absolute top-[0%] left-[0%] w-[30%] h-[40%] bg-indigo-300/20 rounded-full blur-[120px]"></div>
             <div className="absolute bottom-[0%] right-[0%] w-[30%] h-[40%] bg-emerald-300/20 rounded-full blur-[120px]"></div>
 
-            <div className="w-full max-w-[26rem] bg-white rounded-[2rem] shadow-[0_8px_40px_rgba(0,0,0,0.06)] p-10 relative z-10 border border-slate-100">
-                <div className="mb-8">
+            <div className="w-full max-w-[26rem] bg-white rounded-[2rem] shadow-[0_12px_50px_rgba(0,0,0,0.07)] p-10 relative z-10 border border-slate-100/80">
+                <div className="mb-8 flex justify-center">
                     <CreditWiseLogo size="md" />
                 </div>
 
                 {!submitted ? (
                     <>
-                        <h1 className="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight">Resetare parolă</h1>
-                        <p className="text-slate-500 text-sm mb-8">
-                            Introduceți adresa de email asociată contului pentru a primi un cod de resetare.
-                        </p>
+                        <div className="text-center mb-6">
+                            <h1 className="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight">Resetare parolă</h1>
+                            <p className="text-slate-500 text-sm">
+                                Introduceți adresa de email asociată contului pentru a primi un cod de resetare.
+                            </p>
+                        </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-xs font-semibold text-slate-700 ml-1">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="email@exemplu.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus-visible:ring-1 focus-visible:ring-slate-400 transition-shadow px-4"
-                                />
+                                <Label htmlFor="email" className="text-xs font-bold text-slate-700 ml-1 uppercase tracking-wide">Email</Label>
+                                <div className="relative">
+                                    <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="nume@creditwise.ro"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="h-12 rounded-xl border-slate-200 bg-white shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500 transition-all pl-11 pr-4"
+                                    />
+                                </div>
                             </div>
 
                             {error && (
-                                <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-xl">{error}</p>
+                                <p className="text-red-500 text-sm bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>
                             )}
 
                             <Button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full h-12 rounded-xl bg-[#1c1c1c] hover:bg-black text-white text-base font-medium shadow-md transition-transform active:scale-[0.98]"
+                                className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-base font-semibold shadow-[0_4px_14px_rgba(79,70,229,0.25)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.4)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 border-0"
                             >
                                 {loading ? 'Se procesează...' : 'Trimite cod de resetare'}
                             </Button>
@@ -85,8 +90,8 @@ const ForgotPasswordPage = () => {
                 ) : (
                     <div className="space-y-6">
                         <div className="flex justify-center">
-                            <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
-                                <MailCheck size={32} className="text-emerald-500" />
+                            <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                                <MailCheck size={30} className="text-emerald-500" />
                             </div>
                         </div>
 
@@ -98,13 +103,13 @@ const ForgotPasswordPage = () => {
                         </div>
 
                         {token && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                            <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-4">
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-2">Cod de resetare (mod dezvoltare)</p>
                                 <div className="flex items-center gap-3">
-                                    <code className="flex-1 text-sm font-mono font-bold text-slate-800 break-all">{token}</code>
+                                    <code className="flex-1 text-sm font-mono font-bold text-slate-800 break-all bg-white p-2 rounded-lg border border-slate-100">{token}</code>
                                     <button
                                         onClick={handleCopy}
-                                        className="shrink-0 w-9 h-9 rounded-xl bg-white border border-amber-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-amber-300 transition-all"
+                                        className="shrink-0 w-9 h-9 rounded-xl bg-white border border-amber-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-amber-300 transition-all shadow-sm"
                                     >
                                         {copied ? <Check size={15} className="text-emerald-500" /> : <Copy size={15} />}
                                     </button>
@@ -114,7 +119,7 @@ const ForgotPasswordPage = () => {
 
                         <Button
                             onClick={() => navigate(token ? `/reset-password?token=${token}` : '/reset-password')}
-                            className="w-full h-12 rounded-xl bg-[#1c1c1c] hover:bg-black text-white text-base font-medium shadow-md flex items-center justify-center gap-2"
+                            className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-base font-semibold shadow-[0_4px_14px_rgba(79,70,229,0.25)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.4)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 border-0 flex items-center justify-center gap-2"
                         >
                             <KeyRound size={18} />
                             Continuă resetarea parolei

@@ -167,6 +167,17 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
+    // Reactivate any Admin user that was accidentally deactivated
+    var deactivatedAdmins = await db.Users.Where(u => u.Role == UserRole.Admin && !u.IsActive).ToListAsync();
+    if (deactivatedAdmins.Any())
+    {
+        foreach (var admin in deactivatedAdmins)
+        {
+            admin.IsActive = true;
+        }
+        await db.SaveChangesAsync();
+    }
+
     bool adminExists = await db.Users.AnyAsync(u => u.Role == UserRole.Admin);
     if (!adminExists)
     {

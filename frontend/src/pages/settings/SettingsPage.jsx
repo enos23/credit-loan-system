@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Globe, Layout, Save, CheckCircle, Moon, Sun, Monitor, AlertCircle } from 'lucide-react';
+import { Bell, Globe, Layout, Save, CheckCircle, Moon, Sun, Monitor, AlertCircle, ChevronDown } from 'lucide-react';
 import { getPreferences, updatePreferences } from '../../api/userPreferencesApi';
 import { extractErrorMessage } from '../../api/errors';
 import { useAuth } from '../../context/AuthContext';
@@ -8,10 +8,10 @@ const Toggle = ({ checked, onChange }) => (
     <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-blue-500' : 'bg-slate-200'}`}
+        className={`relative w-11 h-6 rounded-full transition-all duration-300 outline-none ${checked ? 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_2px_8px_rgba(79,70,229,0.3)]' : 'bg-slate-200'}`}
     >
         <span
-            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`}
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ease-out ${checked ? 'translate-x-5' : 'translate-x-0'}`}
         />
     </button>
 );
@@ -61,19 +61,21 @@ const SettingsPage = () => {
     };
 
     const Section = ({ title, children }) => (
-        <div className="bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 className="font-bold text-slate-800 text-base">{title}</h2>
+        <div className="bg-white/80 border border-white/80 rounded-3xl p-6 shadow-sm space-y-4 backdrop-blur-md">
+            <h2 className="font-extrabold text-slate-800 text-base tracking-tight">{title}</h2>
             {children}
         </div>
     );
 
     const Row = ({ label, description, children }) => (
-        <div className="flex items-center justify-between py-2">
-            <div>
-                <p className="text-sm font-semibold text-slate-700">{label}</p>
-                {description && <p className="text-xs text-slate-400 mt-0.5">{description}</p>}
+        <div className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
+            <div className="pr-4">
+                <p className="text-sm font-bold text-slate-700">{label}</p>
+                {description && <p className="text-xs text-slate-400 mt-1 leading-normal font-medium">{description}</p>}
             </div>
-            {children}
+            <div className="shrink-0">
+                {children}
+            </div>
         </div>
     );
 
@@ -90,7 +92,10 @@ const SettingsPage = () => {
                     from { opacity: 0; transform: translateY(16px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
-                .fade-in { animation: fadeInUp 0.4s ease-out forwards; }
+                .fade-in { 
+                    opacity: 0; 
+                    animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+                }
             `}</style>
 
             <div className="fade-in">
@@ -120,31 +125,37 @@ const SettingsPage = () => {
 
             {/* Localization */}
             <div className="fade-in" style={{ animationDelay: '120ms', opacity: 0 }}>
-                <Section title={<span className="flex items-center gap-2"><Globe size={16} className="text-blue-500" /> Limbă & Regiune</span>}>
+                <Section title={<span className="flex items-center gap-2"><Globe size={16} className="text-indigo-600" /> Limbă & Regiune</span>}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Limbă</label>
-                            <select
-                                value={prefs.language}
-                                onChange={e => setField('language', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
-                            >
-                                <option value="ro">Română</option>
-                                <option value="en">English</option>
-                            </select>
-                            <p className="text-[11px] text-slate-400 mt-1">Persistă în profil. Limba UI-ului se va schimba odată cu integrarea i18n.</p>
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Limbă</label>
+                            <div className="relative">
+                                <select
+                                    value={prefs.language}
+                                    onChange={e => setField('language', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm appearance-none pr-10"
+                                >
+                                    <option value="ro">Română</option>
+                                    <option value="en">English</option>
+                                </select>
+                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-1 ml-1 leading-normal">Persistă în profil. Limba UI-ului se va schimba odată cu integrarea i18n.</p>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Format Dată</label>
-                            <select
-                                value={prefs.dateFormat}
-                                onChange={e => setField('dateFormat', e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
-                            >
-                                <option value="dd/mm/yyyy">DD/MM/YYYY</option>
-                                <option value="mm/dd/yyyy">MM/DD/YYYY</option>
-                                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
-                            </select>
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Format Dată</label>
+                            <div className="relative">
+                                <select
+                                    value={prefs.dateFormat}
+                                    onChange={e => setField('dateFormat', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm appearance-none pr-10"
+                                >
+                                    <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+                                    <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+                                    <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+                                </select>
+                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            </div>
                         </div>
                     </div>
                 </Section>
@@ -152,21 +163,24 @@ const SettingsPage = () => {
 
             {/* Display */}
             <div className="fade-in" style={{ animationDelay: '180ms', opacity: 0 }}>
-                <Section title={<span className="flex items-center gap-2"><Layout size={16} className="text-blue-500" /> Afișare</span>}>
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Înregistrări per pagină</label>
-                        <select
-                            value={prefs.itemsPerPage}
-                            onChange={e => setField('itemsPerPage', parseInt(e.target.value))}
-                            className="w-full sm:w-40 px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
-                        >
-                            {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} rânduri</option>)}
-                        </select>
-                        <p className="text-[11px] text-slate-400 mt-1">Aplică la listele de clienți și cereri de credit.</p>
+                <Section title={<span className="flex items-center gap-2"><Layout size={16} className="text-indigo-600" /> Afișare</span>}>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Înregistrări per pagină</label>
+                        <div className="relative w-full sm:w-44">
+                            <select
+                                value={prefs.itemsPerPage}
+                                onChange={e => setField('itemsPerPage', parseInt(e.target.value))}
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm appearance-none pr-10"
+                            >
+                                {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} rânduri</option>)}
+                            </select>
+                            <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 ml-1 leading-normal">Aplică la listele de clienți și cereri de credit.</p>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Temă</label>
+                    <div className="space-y-2.5">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Temă</label>
                         <div className="flex gap-3">
                             {[
                                 { value: 'light', label: 'Light', Icon: Sun },
@@ -177,14 +191,18 @@ const SettingsPage = () => {
                                     key={value}
                                     type="button"
                                     onClick={() => setField('theme', value)}
-                                    className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl border-2 text-xs font-semibold transition-all ${prefs.theme === value ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                                    className={`flex-1 flex flex-col items-center gap-2 py-3.5 rounded-2xl border-2 text-xs font-bold transition-all ${
+                                        prefs.theme === value 
+                                            ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50 shadow-[0_4px_12px_rgba(79,70,229,0.08)]' 
+                                            : 'border-slate-100 text-slate-500 bg-white hover:border-slate-200 hover:text-slate-700'
+                                    }`}
                                 >
                                     <Icon size={18} />
                                     {label}
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-2">Persistă în profil. Modul dark/system se va activa la implementarea suportului de teme.</p>
+                        <p className="text-[11px] text-slate-400 mt-2 ml-1 leading-normal">Persistă în profil. Modul dark/system se va activa la implementarea suportului de teme.</p>
                     </div>
                 </Section>
             </div>
@@ -204,7 +222,7 @@ const SettingsPage = () => {
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-[0_4px_14px_rgba(79,70,229,0.18)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.35)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 border-0"
                 >
                     <Save size={15} /> {saving ? 'Se salvează...' : 'Salvează'}
                 </button>
